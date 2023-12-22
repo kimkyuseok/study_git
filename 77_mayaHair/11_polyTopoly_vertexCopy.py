@@ -9,6 +9,7 @@ def poly_copy(polygonA,polygonB):
     # 각각 버텍스 찾기
     verticesA = cmds.ls(polygonA + '.vtx[*]', flatten=True)
     verticesB = cmds.ls(polygonB + '.vtx[*]', flatten=True)
+    vertexcopylist=[]
     # a 버텍스 기준으로 for문
     for i in verticesA:
         # a 폴리곤 버텍스 i번째 위치 알아내기
@@ -29,9 +30,11 @@ def poly_copy(polygonA,polygonB):
                 min_distance = distance
                 # 최단거리 버텍스 갱신
                 closest_vertex = vertex
-        print (i,closest_vertex)
-        cmds.select(i,closest_vertex)
-        mel.eval('copySkinWeights  -noMirror -surfaceAssociation closestPoint -influenceAssociation oneToOne -influenceAssociation oneToOne -influenceAssociation oneToOne;')
+        #print (i,closest_vertex)
+        vertexcopylist.append(closest_vertex)
+    # 폴리곤 a  버텍스 리스트 카피
+    cmds.select(polygonA,vertexcopylist)
+    mel.eval('copySkinWeights  -noMirror -surfaceAssociation closestPoint -influenceAssociation oneToOne -influenceAssociation oneToOne -influenceAssociation oneToOne;')
 
 selObj = cmds.ls(sl=1)
 polygonB = selObj[-1]
