@@ -230,6 +230,7 @@ pm.parent(rope_CG,prop_all_C_G)
 ikHandle_G = pm.createNode('transform',n='ikHandle_G')
 pm.parent(ropeSkinIkHandle[0],ropeBaseIkHandle[0],ropeLengthIkHandle[0],ikHandle_G)
 ikHandleCurve_G = pm.createNode('transform',n='ikHandleCurve_G')
+# 아이케이커브 
 pm.parent(rope_detail_curve,rope_base_curve,rope_srtend_curve,ikHandleCurve_G)
 # 클러스터 그룹정리
 cluster_G = pm.createNode('transform',n='cluster_G')
@@ -278,7 +279,7 @@ rigSystem.v.set(0)
 ropeLengthjoint_G.v.set(0)
 ropeBasejoint_G.v.set(0)
 # 기능 추가 
-# 스태치 
+ 
 # 트렌스 
 rope_aim_C.addAttr('rope_tranFollow',type='float',min=0,max=1,dv=0,k=1)
 ctrlVisibility=pm.createNode('reverse',n='ctrlVisibility')  
@@ -290,4 +291,65 @@ for i in range(1,11):
     rope_aim_C.rope_tranFollow >> pm.PyNode(f'rope_{i}_C_G').blendPoint1
     ctrlVisibility.outputX >> pm.PyNode(f'rope_{i}_CShape').v
 
-# 로테이트 
+# 로테이트  
+rope_aim_C.addAttr('rope_rotFollow',type='float',min=0,max=1,dv=0,k=1)
+pm.orientConstraint('rope_aim_C','rope_10_C_G',mo=1)
+pm.setKeyframe('rope_10_C_G', attribute='r', t=0 )
+rope_aim_C.rope_rotFollow >> pm.PyNode(f'rope_10_C_G').blendOrient1
+
+# 스태치
+rope_aim_C.addAttr('rope_length',type='float',min=1,max=10,dv=10,k=1)
+
+# 조인트 21개 스테치 
+# curveInfo 를 만들어서 길이 겟.  69
+baseCurveBase=None
+rope_base_curveShape = pm.PyNode(rope_base_curve).getChildren()[0]
+Base_Joint_CurveInfo = pm.createNode('curveInfo',n='Base_Joint_CurveInfo')
+rope_base_curveShape.worldSpace[0] >> Base_Joint_CurveInfo.inputCurve
+baseCurveBase=Base_Joint_CurveInfo.arcLength.get()
+#
+Base_MDL = pm.createNode('multDoubleLinear',n='Base_MDL')
+scaleSet.sx >> Base_MDL.input1
+Base_MDL.input2.set(baseCurveBase)
+Base_MDD = pm.createNode('multiplyDivide',n='Base_MDD')
+Base_Joint_CurveInfo.arcLength >> Base_MDD.input1X
+Base_MDL.output    >> Base_MDD.input2X
+Base_MDD.operation.set(2)
+# 스테치 적용 
+for i in ropeBaseJoint:
+    _MDL=pm.createNode('multDoubleLinear',n=i+'_MDL')
+    jointTY=i.ty.get()
+    _MDL.input2.set(jointTY)
+    Base_MDD.outputX >> _MDL.input1
+    _MDL.output >> i.ty
+    
+# 조인트 101개 스테치     
+detailCurveBase=None
+rope_detail_curveShape = pm.PyNode(rope_detail_curve).getChildren()[0]
+detail_Joint_CurveInfo = pm.createNode('curveInfo',n='detail_Joint_CurveInfo')
+rope_detail_curveShape.worldSpace[0] >> detail_Joint_CurveInfo.inputCurve
+detailCurveBase=detail_Joint_CurveInfo.arcLength.get()
+#
+detail_MDL = pm.createNode('multDoubleLinear',n='detail_MDL')
+scaleSet.sx >> detail_MDL.input1
+detail_MDL.input2.set(detailCurveBase)
+detail_MDD = pm.createNode('multiplyDivide',n='detail_MDD')
+detail_Joint_CurveInfo.arcLength >> detail_MDD.input1X
+detail_MDL.output    >> detail_MDD.input2X
+detail_MDD.operation.set(2)
+
+# 스킨 조인트 스테치 추가 부분  디테치 커브 대신 
+skinA_MDL = pm.createNode('multDoubleLinear',n='skin_MDL')
+rope_aim_C.rope_length >> skinA_MDL.input1
+skinA_MDL.input2.set(0.1)
+# 스테치 적용 
+for i in ropeSkinJoint:
+    _MDL=pm.createNode('multDoubleLinear',n=i+'_MDL')
+    _A_MDL=pm.createNode('multDoubleLinear',n=i+'_A_MDL')    
+    jointTY=i.ty.get()    
+    detail_MDD.outputX >> _MDL.input1
+    _MDL.input2.set(jointTY)    
+    _MDL.output >> _A_MDL.input1
+    skinA_MDL.output >> _A_MDL.input2
+    _A_MDL.output >> i.ty
+pm.select(rope_aim_C)
