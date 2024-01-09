@@ -22,10 +22,12 @@ rope_aim_C=None
 if chackStartEnd:    
     # 기본 컨트롤러  서클 3개  prop_all_C   prop_move_C   prop_move1_C   
     prop_all_C=pm.circle(r=2, nr=(0, 1, 0), c=(0, 0, 0) ,n='prop_all_C')
-    prop_move_C=pm.circle( nr=(0, 1, 0), c=(0, 0, 0) ,n='prop_move_C')
+    prop_move_C=pm.circle(r=1.5, nr=(0, 1, 0), c=(0, 0, 0) ,n='prop_move_C')
     prop_move1_C=pm.circle( nr=(0, 1, 0), c=(0, 0, 0) ,n='prop_move1_C')
     # 기본 컨트롤러  박스 1개  rope_aim_C
     rope_aim_C=pm.curve( d=1, p=[(0.5, 0, -0.5), (-0.5, 0, -0.5), (-0.5, 0, 0.5), (0.5, 0, 0.5), (0.5, 0, -0.5)] ,n='rope_aim_C')
+    pm.select(rope_aim_C+'.cv[*]')
+    pm.scale(1.7,1.7,1.7,r=True)    
 # 기본 컨트롤러 포지션
 # prop_all_C 는 기본상태로 있자
 # prop_move_C , rope_aim_C  는 end 위치    
@@ -60,7 +62,7 @@ ropeLengthJoint.reverse()
 for i in range(0,len(ropeLengthJoint)-1):
     pm.parent(ropeLengthJoint[i],ropeLengthJoint[i+1])
 # 스플라인 ik를 적용 
-pm.ikHandle(n='test',sol='ikSplineSolver',ccv=0,scv=0,pcv=0,sj=ropeLengthJoint[-1],ee=ropeLengthJoint[0],c=rope_srtend_curve)
+ropeLengthIkHandle=pm.ikHandle(n='ropeLengthIkHandle',sol='ikSplineSolver',ccv=0,scv=0,pcv=0,sj=ropeLengthJoint[-1],ee=ropeLengthJoint[0],c=rope_srtend_curve)
 # 클러스터를 적용
 ropeLengthJointCluster_Str=pm.cluster(rope_srtend_curve+'.cv[0]',n='ropeLengthJointCluster_Str')
 ropeLengthJointCluster_End=pm.cluster(rope_srtend_curve+'.cv[1]',n='ropeLengthJointCluster_End')
@@ -107,9 +109,11 @@ boxctrllist=[]
 tenctrllist=[]
 for i in range(0,11):
     boxctrl=pm.curve(n=f'rope_{i}_C' ,d=1, p=[(-0.5, 0.5, 0.5),(0.5, 0.5, 0.5),(0.5, 0.5, -0.5),(-0.5, 0.5, -0.5),(-0.5, 0.5, 0.5),(-0.5, -0.5, 0.5),(-0.5, -0.5, -0.5),(0.5, -0.5, -0.5),(0.5, -0.5, 0.5),(-0.5, -0.5, 0.5),(0.5, -0.5, 0.5),(0.5, 0.5, 0.5),(0.5, 0.5, -0.5),(0.5, -0.5, -0.5),(-0.5, -0.5, -0.5),(-0.5, 0.5, -0.5)] )    
+    pm.select(boxctrl+'.cv[*]')
+    pm.scale(0.7,0.7,0.7,r=True)    
     tenctrl=pm.curve(n=f'rope_in_{i}_C', d=1, p=[(-1,0,-1),(-1,0,-2),(1,0,-2),(1,0,-1),(2,0,-1),(2,0,1),(1,0,1),(1,0,2),(-1,0,2),(-1,0,1),(-2,0,1),(-2,0,-1),(-1,0,-1)])
     pm.select(tenctrl+'.cv[*]')
-    pm.scale(0.5,0.5,0.5,r=True)
+    pm.scale(0.4,0.4,0.4,r=True)
     boxctrllist.append(boxctrl)
     tenctrllist.append(tenctrl)    
 pm.select(cl=1)
@@ -122,14 +126,168 @@ for i in range(0,11):
     _G.t.set(lengthPos11[i])
     pm.parent(_G,parentNode)
     parentNode= boxctrllist[i]
-
-# Length Joint To rppe_0_CG 연결
+# Length Joint To rppe_0_CG 연결 
 pm.parentConstraint('ropeLength000_jnt','rope_0_C_G',mo=1)
-
 # 베이스 21개 조인트 생성
 basePos21=[]
 for i in range(0,21):
     Length_Joint_pointOnCurveInfo.parameter.set(i*0.05)
     getPOS=Length_Joint_pointOnCurveInfo.position.get()
     basePos21.append(getPOS)
-#    
+# create Joint 
+# 조인트 만들기 21개
+ropeBaseJoint=[]
+numi=0    
+for i in basePos21:
+    newjoint = pm.createNode('joint',n=f'ropeBase00{numi}_jnt')
+    newjoint.t.set(i)
+    numi = numi+1
+    ropeBaseJoint.append(newjoint)
+# 조인트 리스트를 주면 순서대로 페어런츠 해주기 
+ropeBaseJoint.reverse()
+for i in range(0,len(ropeBaseJoint)-1):
+    pm.parent(ropeBaseJoint[i],ropeBaseJoint[i+1])
+# 스플라인 ik를 적용 
+ropeBaseIkHandle=pm.ikHandle(n='ropeBaseIkHandle',sol='ikSplineSolver',ccv=0,scv=0,pcv=0,sj=ropeBaseJoint[-1],ee=ropeBaseJoint[0],c=rope_base_curve)
+# 클러스터 & in_C 컨트롤러 연결
+for i in range(0,11):
+    clusterNode=f'ropebase00{i}_clusterHandle'
+    inCtrlNodje=f'rope_in_{i}_C'
+    pm.parentConstraint(inCtrlNodje,clusterNode,mo=1)
+"""
+여기서부터는  21개 컨트롤러 
+"""    
+# 21개 클러스터 생성 할  커브 생성 커브 위치는 이전 조인트 위치를 포인트로 바꿔서 만든다. 
+rope_detail_curve=pm.curve( d=3, p=basePos21 ,n='rope_detail_curve')
+# 클러스터 21개를 만들고 
+rope_detail_curve_cluster=[]
+for i in range(0,21):
+    _cluster=pm.cluster(rope_detail_curve+f'.cv[{i}]',n=f'ropedetail00{i}_cluster')
+    rope_detail_curve_cluster.append(_cluster)
+# 디테일 컨트롤러 생성 동그라미 sphere
+spherectrllist=[]    
+for i in range(0,21):
+    rope_detail_=cmds.curve(n=f'rope_detail_{i}_C', d=1, p=[(0, 0, 3),(2, 0, 2),(3, 0, 0),(2, 0, -2),(0, 0, -3),(-2, 0, -2),(-3, 0, 0),(-2, 0, 2),(0, 0, 3),(0, 0, 3),(0, 2, 2),(0, 3, 0),(0, 2, -2),(0, 0, -3),(0, -2, -2),(0, -3, 0),(0, -2, 2),(0, 0, 3),(0, 0, 3),(0, 2, 2),(0, 3, 0),(-2, 2, 0),(-3, 0, 0),(-2, -2, 0),(0, -3, 0),(2, -2, 0),(3, 0, 0),(2, 2, 0),(0, 3, 0)] )
+    pm.select(rope_detail_+'.cv[*]')
+    pm.scale(0.09,0.09,0.09,r=True)    
+    spherectrllist.append(rope_detail_)
+pm.select(cl=1)
+rope_detail_CG = pm.createNode('transform',n='rope_detail_CG')    
+for i in range(0,21):
+    _G = pm.group(spherectrllist[i],n = spherectrllist[i]+'_G')
+    _G.t.set(basePos21[i])
+    pm.parent(_G,rope_detail_CG)
+for i in range(0,21):
+    pm.parentConstraint(f'rope_detail_{i}_C',f'ropedetail00{i}_clusterHandle',mo=1)
+    pm.parentConstraint(f'ropeBase00{i}_jnt',f'rope_detail_{i}_C_G',mo=1)
+    
+# joint100
+"""
+조인트 101개 
+"""
+# 베이스 101개 조인트 생성
+skinJointPos101=[]
+for i in range(0,101):
+    Length_Joint_pointOnCurveInfo.parameter.set(i*0.01)
+    getPOS=Length_Joint_pointOnCurveInfo.position.get()
+    skinJointPos101.append(getPOS)
+# 조인트 만들기 101개
+ropeSkinJoint=[]
+numi=0    
+for i in skinJointPos101:
+    newjoint = pm.createNode('joint',n=f'ropeSkin00{numi}_jnt')
+    newjoint.t.set(i)
+    numi = numi+1
+    ropeSkinJoint.append(newjoint)
+# 조인트 리스트를 주면 순서대로 페어런츠 해주기 
+ropeSkinJoint.reverse()
+for i in range(0,len(ropeSkinJoint)-1):
+    pm.parent(ropeSkinJoint[i],ropeSkinJoint[i+1])
+# 스플라인 ik를 적용 
+ropeSkinIkHandle=pm.ikHandle(n='ropeSkinIkHandle',sol='ikSplineSolver',ccv=0,scv=0,pcv=0,sj=ropeSkinJoint[-1],ee=ropeSkinJoint[0],c=rope_detail_curve)
+# 해야할꺼
+# 그룹정리 
+# 컨트롤러 그룹정리
+rig = pm.createNode('transform',n='rig')
+prop_all_C_G = pm.createNode('transform',n='prop_all_C_G')
+prop_move_C_G = pm.createNode('transform',n='prop_move_C_G')
+prop_move1_C_G = pm.createNode('transform',n='prop_move1_C_G')
+rope_aim_C_G = pm.createNode('transform',n='rope_aim_C_G')
+prop_move1_C_G.t.set(startPOS)
+prop_move_C_G.t.set(endPOS)
+rope_aim_C_G.t.set(endPOS)
+pm.parent(prop_all_C[0],prop_all_C_G)
+pm.parent(prop_move_C[0],prop_move_C_G)
+pm.parent(prop_move1_C[0],prop_move1_C_G)
+pm.parent(rope_aim_C,rope_aim_C_G)
+pm.parent(rope_aim_C_G,prop_move1_C[0])
+pm.parent(prop_move1_C_G,prop_move_C[0])
+pm.parent(prop_move_C_G,prop_all_C[0])
+pm.parent(prop_all_C_G,rig)
+pm.parent(rope_detail_CG,prop_all_C_G)
+pm.parent(rope_CG,prop_all_C_G)
+# 아이케이핸들 그룹정리
+ikHandle_G = pm.createNode('transform',n='ikHandle_G')
+pm.parent(ropeSkinIkHandle[0],ropeBaseIkHandle[0],ropeLengthIkHandle[0],ikHandle_G)
+ikHandleCurve_G = pm.createNode('transform',n='ikHandleCurve_G')
+pm.parent(rope_detail_curve,rope_base_curve,rope_srtend_curve,ikHandleCurve_G)
+# 클러스터 그룹정리
+cluster_G = pm.createNode('transform',n='cluster_G')
+ropedetailcluster_G = pm.createNode('transform',n='ropedetailcluster_G')
+ropeLengthcluster_G = pm.createNode('transform',n='ropeLengthcluster_G')
+ropebasecluster_G = pm.createNode('transform',n='ropebasecluster_G')
+pm.parent(rope_detail_curve_cluster,ropedetailcluster_G)
+pm.parent(rope_base_curve_cluster,ropebasecluster_G)
+pm.parent(ropeLengthJointCluster_Str,ropeLengthJointCluster_End,ropeLengthcluster_G)
+pm.parent(ropeLengthcluster_G,ropebasecluster_G,ropedetailcluster_G,cluster_G)
+# 조인트 그룹정리
+joint_G = pm.createNode('transform',n='joint_G')
+ropeLengthjoint_G = pm.createNode('transform',n='ropeLengthjoint_G')
+ropeBasejoint_G = pm.createNode('transform',n='ropeBasejoint_G')
+ropeSkinjoint_G = pm.createNode('transform',n='ropeSkinjoint_G')
+pm.parent( ropeLengthjoint_G,ropeBasejoint_G,ropeSkinjoint_G,joint_G )
+pm.parent( ropeLengthJoint[-1],ropeLengthjoint_G)
+pm.parent( ropeBaseJoint[-1],ropeBasejoint_G)
+pm.parent( ropeSkinJoint[-1],ropeSkinjoint_G)
+rigSystem=pm.createNode('transform',n='rigSystem')
+pm.parent(cluster_G,ikHandle_G,ikHandleCurve_G,scaleSet,rigSystem)
+pm.parent(rigSystem,joint_G,rig)
+# 컨트롤러 색상
+def colorChange(ctrlNode,colorNumber):
+    Node_=pm.PyNode(ctrlNode)
+    Shape_=Node_.getChildren(type='shape')
+    Shape_[0].overrideEnabled.set(1)
+    Shape_[0].overrideColor.set(colorNumber)
+# 파랑
+colorChange(prop_all_C[0],6)
+# 하늘
+colorChange(prop_move_C[0],18)
+colorChange(prop_move1_C[0],18)
+for i in spherectrllist:
+    colorChange(i,18)
+# 적색
+for i in boxctrllist:
+    colorChange(i,12)
+# 핑크
+for i in tenctrllist:
+    colorChange(i,20)
+# 노랑
+colorChange(rope_aim_C,17)
+# 숨기고 보이고 정리
+rigSystem.v.set(0)
+ropeLengthjoint_G.v.set(0)
+ropeBasejoint_G.v.set(0)
+# 기능 추가 
+# 스태치 
+# 트렌스 
+rope_aim_C.addAttr('rope_tranFollow',type='float',min=0,max=1,dv=0,k=1)
+ctrlVisibility=pm.createNode('reverse',n='ctrlVisibility')  
+rope_aim_C.rope_tranFollow >>  ctrlVisibility.inputX
+
+for i in range(1,11):
+    pm.pointConstraint(f'ropeLength00{i}_jnt',f'rope_{i}_C_G',mo=1)
+    pm.setKeyframe(f'rope_{i}_C_G', attribute='t', t=0 )
+    rope_aim_C.rope_tranFollow >> pm.PyNode(f'rope_{i}_C_G').blendPoint1
+    ctrlVisibility.outputX >> pm.PyNode(f'rope_{i}_CShape').v
+
+# 로테이트 
