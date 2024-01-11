@@ -1,7 +1,7 @@
-마야(Maya)에서 PyQt를 사용하여 사용자 정의 UI를 만들어보겠습니다. 아래는 PyQt를 사용한 간단한 예제 코드입니다.
+알겠습니다. PyQt를 사용하여 처음부터 라디오 버튼과 숫자를 입력하는 UI를 만들고, 해당 UI에서 선택한 컨트롤을 마야에서 선택하는 스크립트를 작성해보겠습니다.
 
 ```python
-from PySide2 import QtWidgets, QtGui, QtCore
+from PySide2 import QtWidgets, QtGui
 import maya.cmds as cmds
 
 class CustomSelectToolUI(QtWidgets.QWidget):
@@ -9,32 +9,45 @@ class CustomSelectToolUI(QtWidgets.QWidget):
         super(CustomSelectToolUI, self).__init__()
 
         self.setWindowTitle("Custom Select Tool")
-        self.setGeometry(200, 200, 300, 100)
+        self.setGeometry(200, 200, 300, 150)
 
         self.create_ui()
 
     def create_ui(self):
         layout = QtWidgets.QVBoxLayout()
 
-        label = QtWidgets.QLabel("Select Control:")
+        label = QtWidgets.QLabel("Select Control Type:")
         layout.addWidget(label)
 
-        outer_ctrl_btn = QtWidgets.QPushButton("outer_ctrl")
-        outer_ctrl_btn.clicked.connect(lambda: self.select_ctrl("outer"))
-        layout.addWidget(outer_ctrl_btn)
+        self.outer_radio = QtWidgets.QRadioButton("Outer")
+        self.inner_radio = QtWidgets.QRadioButton("Inner")
 
-        inner_ctrl_btn = QtWidgets.QPushButton("inner_ctrl")
-        inner_ctrl_btn.clicked.connect(lambda: self.select_ctrl("inner"))
-        layout.addWidget(inner_ctrl_btn)
+        radio_layout = QtWidgets.QHBoxLayout()
+        radio_layout.addWidget(self.outer_radio)
+        radio_layout.addWidget(self.inner_radio)
+        layout.addLayout(radio_layout)
+
+        label = QtWidgets.QLabel("Enter Number:")
+        layout.addWidget(label)
+
+        self.number_spinbox = QtWidgets.QSpinBox()
+        layout.addWidget(self.number_spinbox)
+
+        select_btn = QtWidgets.QPushButton("Select")
+        select_btn.clicked.connect(self.select_ctrl)
+        layout.addWidget(select_btn)
 
         self.setLayout(layout)
 
-    def select_ctrl(self, ctrl_type):
-        selected_number, ok = QtWidgets.QInputDialog.getInt(self, "Enter Number", "Enter a number:")
-        if ok:
-            ctrl_name = f"kai_mermaid:{ctrl_type}{selected_number:03d}_ctrl"
-            cmds.select(ctrl_name)
+    def select_ctrl(self):
+        ctrl_type = "outer" if self.outer_radio.isChecked() else "inner"
+        selected_number = self.number_spinbox.value()
+        ctrl_name = f"kai_mermaid:{ctrl_type}{selected_number:03d}_ctrl"
+        
+        # 마야에서 해당 컨트롤 선택
+        cmds.select(ctrl_name)
 
+# 실행 함수
 def show_custom_select_tool_ui():
     global custom_select_tool_ui
     try:
@@ -44,9 +57,8 @@ def show_custom_select_tool_ui():
     custom_select_tool_ui = CustomSelectToolUI()
     custom_select_tool_ui.show()
 
+# 스크립트 실행
 show_custom_select_tool_ui()
 ```
 
-이 코드는 PyQt를 사용하여 간단한 UI를 만들고, "outer_ctrl" 및 "inner_ctrl" 버튼을 클릭하면 해당하는 컨트롤을 선택하도록 하는 예제입니다. 사용자에게 숫자를 입력받아서 해당하는 숫자를 컨트롤 이름에 적용하게끔 했습니다.
-
-이 코드를 마야 스크립트 에디터나 스크립트 창에서 실행하면 UI가 나타나고, "outer_ctrl" 또는 "inner_ctrl" 버튼을 클릭하여 선택할 수 있습니다.
+이 스크립트를 마야 스크립트 에디터나 스크립트 창에서 실행하면, UI가 나타나고 "Outer" 또는 "Inner" 라디오 버튼을 선택하고 숫자를 입력한 후 "Select" 버튼을 클릭하면 해당하는 컨트롤이 마야에서 선택됩니다.
