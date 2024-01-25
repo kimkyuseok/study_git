@@ -2,6 +2,11 @@
 # 인풋  시작과 끝  ( 로케이터 2개 선택하고 실행 )
 # 조인트 갯수  기본 100개 에  트렌스 11개  디테일 컨트롤러 21개  # 아웃풋  리깅된 로프 
 import pymel.core as pm
+
+mainCount=31
+detailCount=61
+skinCount=101
+
 chackStartEnd=False
 selObj=pm.ls(sl=1,fl=1)
 startObj=None
@@ -47,10 +52,14 @@ Length_Joint_pointOnCurveInfo = pm.createNode('pointOnCurveInfo',n='Length_Joint
 rope_srtend_curveShape = pm.PyNode(rope_srtend_curve).getChildren()[0]
 rope_srtend_curveShape.worldSpace[0] >> Length_Joint_pointOnCurveInfo.inputCurve
 Length_Joint_pointOnCurveInfo.turnOnPercentage.set(1)
-for i in range(0,11):
-    Length_Joint_pointOnCurveInfo.parameter.set(i*0.1)
+
+mainInterval = 1.0 / (mainCount - 1)
+forCount=0.0
+for i in range(0,mainCount):
+    Length_Joint_pointOnCurveInfo.parameter.set(forCount)
     getPOS=Length_Joint_pointOnCurveInfo.position.get()
     lengthPos11.append(getPOS)
+    forCount = forCount + mainInterval
 # 조인트 만들기 11개
 ropeLengthJoint=[]
 numi=0    
@@ -103,13 +112,13 @@ pm.parentConstraint(rope_aim_C,ropeLengthJointCluster_End,mo=1)
 rope_base_curve=pm.curve( d=3, p=lengthPos11 ,n='rope_base_curve')
 # 클러스터 11개를 만들고 
 rope_base_curve_cluster=[]
-for i in range(0,11):
+for i in range(0,mainCount):
     _cluster=pm.cluster(rope_base_curve+f'.cv[{i}]',n=f'ropebase00{i}_cluster')
     rope_base_curve_cluster.append(_cluster)
 # 로테이션 되면서 트렌스되는 중간 컨트롤러 생성 박스 십자가
 boxctrllist=[]
 tenctrllist=[]
-for i in range(0,11):
+for i in range(0,mainCount):
     boxctrl=pm.curve(n=f'rope_{i}_C' ,d=1, p=[(-0.5, 0.5, 0.5),(0.5, 0.5, 0.5),(0.5, 0.5, -0.5),(-0.5, 0.5, -0.5),(-0.5, 0.5, 0.5),(-0.5, -0.5, 0.5),(-0.5, -0.5, -0.5),(0.5, -0.5, -0.5),(0.5, -0.5, 0.5),(-0.5, -0.5, 0.5),(0.5, -0.5, 0.5),(0.5, 0.5, 0.5),(0.5, 0.5, -0.5),(0.5, -0.5, -0.5),(-0.5, -0.5, -0.5),(-0.5, 0.5, -0.5)] )    
     pm.select(boxctrl+'.cv[*]')
     pm.scale(0.7,0.7,0.7,r=True)    
@@ -121,7 +130,7 @@ for i in range(0,11):
 pm.select(cl=1)
 rope_CG = pm.createNode('transform',n='rope_CG')
 parentNode=rope_CG 
-for i in range(0,11):
+for i in range(0,mainCount):
     _G = pm.group(boxctrllist[i],n = boxctrllist[i]+'_G')
     _in_G = pm.group(tenctrllist[i],n = tenctrllist[i]+'in_G')
     pm.parent(_in_G,boxctrllist[i])
@@ -132,10 +141,13 @@ for i in range(0,11):
 pm.parentConstraint('ropeLength000_jnt','rope_0_C_G',mo=1)
 # 베이스 21개 조인트 생성
 basePos21=[]
-for i in range(0,21):
-    Length_Joint_pointOnCurveInfo.parameter.set(i*0.05)
+detailInterval = 1.0 / (detailCount - 1)
+forCount=0.0
+for i in range(0,detailCount):
+    Length_Joint_pointOnCurveInfo.parameter.set(forCount)
     getPOS=Length_Joint_pointOnCurveInfo.position.get()
     basePos21.append(getPOS)
+    forCount=forCount+detailInterval
 # create Joint 
 # 조인트 만들기 21개
 ropeBaseJoint=[]
@@ -152,7 +164,7 @@ for i in range(0,len(ropeBaseJoint)-1):
 # 스플라인 ik를 적용 
 ropeBaseIkHandle=pm.ikHandle(n='ropeBaseIkHandle',sol='ikSplineSolver',ccv=0,scv=0,pcv=0,sj=ropeBaseJoint[-1],ee=ropeBaseJoint[0],c=rope_base_curve)
 # 클러스터 & in_C 컨트롤러 연결
-for i in range(0,11):
+for i in range(0,mainCount):
     clusterNode=f'ropebase00{i}_clusterHandle'
     inCtrlNodje=f'rope_in_{i}_C'
     pm.parentConstraint(inCtrlNodje,clusterNode,mo=1)
@@ -163,23 +175,23 @@ for i in range(0,11):
 rope_detail_curve=pm.curve( d=3, p=basePos21 ,n='rope_detail_curve')
 # 클러스터 21개를 만들고 
 rope_detail_curve_cluster=[]
-for i in range(0,21):
+for i in range(0,detailCount):
     _cluster=pm.cluster(rope_detail_curve+f'.cv[{i}]',n=f'ropedetail00{i}_cluster')
     rope_detail_curve_cluster.append(_cluster)
 # 디테일 컨트롤러 생성 동그라미 sphere
 spherectrllist=[]    
-for i in range(0,21):
+for i in range(0,detailCount):
     rope_detail_=cmds.curve(n=f'rope_detail_{i}_C', d=1, p=[(0, 0, 3),(2, 0, 2),(3, 0, 0),(2, 0, -2),(0, 0, -3),(-2, 0, -2),(-3, 0, 0),(-2, 0, 2),(0, 0, 3),(0, 0, 3),(0, 2, 2),(0, 3, 0),(0, 2, -2),(0, 0, -3),(0, -2, -2),(0, -3, 0),(0, -2, 2),(0, 0, 3),(0, 0, 3),(0, 2, 2),(0, 3, 0),(-2, 2, 0),(-3, 0, 0),(-2, -2, 0),(0, -3, 0),(2, -2, 0),(3, 0, 0),(2, 2, 0),(0, 3, 0)] )
     pm.select(rope_detail_+'.cv[*]')
     pm.scale(0.09,0.09,0.09,r=True)    
     spherectrllist.append(rope_detail_)
 pm.select(cl=1)
 rope_detail_CG = pm.createNode('transform',n='rope_detail_CG')    
-for i in range(0,21):
+for i in range(0,detailCount):
     _G = pm.group(spherectrllist[i],n = spherectrllist[i]+'_G')
     _G.t.set(basePos21[i])
     pm.parent(_G,rope_detail_CG)
-for i in range(0,21):
+for i in range(0,detailCount):
     pm.parentConstraint(f'rope_detail_{i}_C',f'ropedetail00{i}_clusterHandle',mo=1)
     pm.parentConstraint(f'ropeBase00{i}_jnt',f'rope_detail_{i}_C_G',mo=1)
     
@@ -189,7 +201,7 @@ for i in range(0,21):
 """
 # 베이스 101개 조인트 생성
 skinJointPos101=[]
-for i in range(0,101):
+for i in range(0,skinCount):
     Length_Joint_pointOnCurveInfo.parameter.set(i*0.01)
     getPOS=Length_Joint_pointOnCurveInfo.position.get()
     skinJointPos101.append(getPOS)
@@ -287,7 +299,7 @@ rope_aim_C.addAttr('rope_tranFollow',type='float',min=0,max=1,dv=0,k=1)
 ctrlVisibility=pm.createNode('reverse',n='ctrlVisibility')  
 rope_aim_C.rope_tranFollow >>  ctrlVisibility.inputX
 
-for i in range(1,11):
+for i in range(1,mainCount):
     pm.pointConstraint(f'ropeLength00{i}_jnt',f'rope_{i}_C_G',mo=1)
     pm.setKeyframe(f'rope_{i}_C_G', attribute='t', t=0 )
     rope_aim_C.rope_tranFollow >> pm.PyNode(f'rope_{i}_C_G').blendPoint1
