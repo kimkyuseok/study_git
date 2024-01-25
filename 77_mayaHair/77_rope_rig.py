@@ -33,8 +33,9 @@ if chackStartEnd:
 # prop_all_C 는 기본상태로 있자
 # prop_move_C , rope_aim_C  는 end 위치    
 # prop_move1_C 는 str 위치에 놓자 
+prop_all_C[0].t.set(startPOS)
 prop_move1_C[0].t.set(startPOS)
-prop_move_C[0].t.set(endPOS)
+prop_move_C[0].t.set(startPOS)
 rope_aim_C.t.set(endPOS)
 # rotate 작업 ??? 일단 패스 
 # 커브를 만들어 
@@ -353,4 +354,10 @@ for i in ropeSkinJoint:
     _MDL.output >> _A_MDL.input1
     skinA_MDL.output >> _A_MDL.input2
     _A_MDL.output >> i.ty
+# 스케일 적용
+pm.scaleConstraint(scaleSet,rope_detail_CG,mo=1)
+pm.scaleConstraint(scaleSet,rope_CG,mo=1)
+pm.scaleConstraint(scaleSet,ropeLengthjoint_G,mo=1)
+pm.scaleConstraint(scaleSet,ropeBasejoint_G,mo=1)
+pm.scaleConstraint(scaleSet,ropeSkinjoint_G,mo=1)
 pm.select(rope_aim_C)
