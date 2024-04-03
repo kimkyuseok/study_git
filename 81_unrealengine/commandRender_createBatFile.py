@@ -41,16 +41,17 @@ WD_list=[]
 all_assets = unreal.EditorAssetLibrary.list_assets('/Game', True, False)
 for i in all_assets:
     renderAsset = unreal.load_asset(i)
-    if renderAsset.get_class().get_name() in ['MoviePipelinePrimaryConfig','LevelSequence','World']:
-        if renderAsset.get_class().get_name() == 'MoviePipelinePrimaryConfig':
-            MPPC_list.append( renderAsset.get_full_name() )
-        elif renderAsset.get_class().get_name() == 'World':
-            WD_list.append( renderAsset.get_name() )
-        elif renderAsset.get_class().get_name() == 'LevelSequence':
-            LS_list.append( str(renderAsset.get_full_name()) )
-        else:
-            pass                
-        #print ( renderAsset.get_class().get_name() ,renderAsset.get_name() )
+    if renderAsset:
+        if renderAsset.get_class().get_name() in ['MoviePipelinePrimaryConfig','LevelSequence','World']:
+            if renderAsset.get_class().get_name() == 'MoviePipelinePrimaryConfig':
+                MPPC_list.append( renderAsset.get_full_name() )
+            elif renderAsset.get_class().get_name() == 'World':
+                WD_list.append( renderAsset.get_name() )
+            elif renderAsset.get_class().get_name() == 'LevelSequence':
+                LS_list.append( str(renderAsset.get_full_name()) )
+            else:
+                pass                
+            #print ( renderAsset.get_class().get_name() ,renderAsset.get_name() )
 
 # 윈도우 생성
 window = tk.Tk()
