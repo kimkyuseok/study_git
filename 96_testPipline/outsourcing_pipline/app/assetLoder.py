@@ -8,6 +8,7 @@ from PySide2.QtWidgets import *
 from PySide2 import __version__
 from maya.app.general import mayaMixin
 import pymel.core as pm
+import outsourcing_pipline.config as INHOUSETOOLS_ICON_PATH
 # 로그
 log = outsourcing_pipline.log.get_logger('asset_loader')
 log.info(' 마야에서 로그가 프린트 되는지 체크 ')
@@ -28,6 +29,8 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
 
     def ui(self):
         log.info('어셋로더 ui 시작합니다.')
+        log.info(f'{INHOUSETOOLS_ICON_PATH}')
+        # 이미지를 넣을려고했는데 -경훈td-님은 환경설정을 잡았다.  환경설정 추가
         pass
 
 
