@@ -16,6 +16,8 @@ log = outsourcing_pipline.log.get_logger('asset_loader')
 log.info(' 마야에서 로그가 프린트 되는지 체크 ')
 
 
+def img_path(img):
+    return os.path.join(INHOUSETOOLS_ICON_PATH, img)
 class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
     WINDOW_NAME = 'vive_asset_loader_window_a'
     def __init__(self):
@@ -26,8 +28,8 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         self.setObjectName(self.WINDOW_NAME)
         self.setWindowTitle(self.WINDOW_NAME)
         self.setGeometry(200, 200, 1000, 800)
-        log.info(f'창로고 {self.img_path("vive_initial_logo.png")}')
-        self.setWindowIcon(QIcon(self.img_path('vive_initial_logo.png')))
+        log.info(f'창로고 {img_path("vive_initial_logo.png")}')
+        self.setWindowIcon(QIcon(img_path('vive_initial_logo.png')))
         self.ui()
         pass
 
@@ -179,6 +181,9 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         self.asset_list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.splitter.addWidget(self.asset_list_scroll )
 
+        self.asset_list_layout = FlowLayout(self.asset_list_scroll.widget())
+        self.asset_list_layout.setSpacing(20)
+
         # 애셋 임포트 현황
         ####################################################################################################
         status_widget = QWidget()
@@ -206,6 +211,7 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         self.asset_selection_scroll_layout.setSpacing(0)
 
         self.import_btn = QPushButton('선택한 애셋 불러오기')
+        self.import_btn.clicked.connect( self.import_btn_connect)
         self.import_btn.setFixedHeight(40)
         #self.import_btn.setIcon(QIcon(img_path('download_white.png')))
         #self.import_btn.setIconSize(QSize(15, 15))
@@ -213,8 +219,24 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         status_layout.addWidget(self.asset_selection_scroll)
         status_layout.addWidget(self.import_btn)
 
-    def img_path(self,img):
-        return os.path.join(INHOUSETOOLS_ICON_PATH,img)
+    def import_btn_connect(self):
+        pass
+
+    def asset_list_layout_item_remove(self):
+        countlayoutitem = self.asset_list_layout.count()
+        print (countlayoutitem)
+        for i in reversed(range(countlayoutitem)):
+            item = self.asset_list_layout.itemAt(i)
+            if isinstance(item, QSpacerItem):
+                self.asset_list_layout.removeItem(item)
+            elif item.widget() is not None:
+                widget = item.widget()
+                self.asset_list_layout.removeWidget(widget)
+                widget.deleteLater()
+
+
+
+        #print ('a')
 
     def searchDriveComboBox_change(self):
         # option var  = 가 있으면 처리를 한다.
@@ -257,13 +279,143 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         log.info(f' 선택한 프로젝트 : {selected_project_item}')
         log.info(f' 선택한 프로젝트 : {selected_asset_item}')
         if selected_dirve_item and selected_project_item and selected_asset_item:
+            if selected_asset_item=='Asset-type':
+                self.asset_list_layout_item_remove()
+                return
             vfx_folder = os.path.join(selected_dirve_item,
                     'vfx', selected_project_item,
                     'asset', selected_asset_item)
             if os.path.exists(vfx_folder):
                 subfolders = [f for f in os.listdir(vfx_folder) if os.path.isdir(os.path.join(vfx_folder, f))]
                 print(subfolders)
+                self.asset_list_layout_item_remove()
+                for i in subfolders:
+                    item = AssetIconWidget(i, parent=self)
+                    self.asset_list_layout.addWidget(item)
+            print (self.asset_list_layout.count)
         pass
+class FlowLayout(QLayout):
+    def __init__(self, parent=None):
+        super(FlowLayout, self).__init__(parent)
+        self.margin = 9
+        self.space_x = 9
+        self.space_y = 9
+        self.itemList = []
+
+    def __del__(self):
+        item = self.takeAt(0)
+        while item:
+            item = self.takeAt(0)
+
+    def setSpacing(self, space):
+        super().setSpacing(space)
+        super().setContentsMargins(space, space, space, space)
+        self.space_x = space
+        self.space_y = space
+        self.margin = space
+
+    def addItem(self, item):
+        self.itemList.append(item)
+
+    def count(self):
+        return len(self.itemList)
+
+    def itemAt(self, index):
+        if 0 <= index < len(self.itemList):
+            return self.itemList[index]
+
+    def takeAt(self, index):
+        if 0 <= index < len(self.itemList):
+            return self.itemList.pop(index)
+
+    def expandingDirections(self):
+        return Qt.Orientations(Qt.Orientation(0))
+
+    def hasHeightForWidth(self):
+        return True
+
+    def heightForWidth(self, width):
+        height = self.do_layout(QRect(0, 0, width, 0))
+        return height
+
+    def setGeometry(self, rect):
+        super(FlowLayout, self).setGeometry(rect)
+        self.do_layout(rect)
+
+    def sizeHint(self):
+        return self.minimumSize()
+
+    def minimumSize(self):
+        size = QSize()
+
+        for item in self.itemList:
+            size = size.expandedTo(item.minimumSize())
+
+        size += QSize(self.contentsMargins().top() + self.contentsMargins().bottom(),
+                      self.contentsMargins().left() + self.contentsMargins().right())
+        return size
+
+    def do_layout(self, rect):
+        x = rect.x() + self.contentsMargins().left()
+        y = rect.y() + self.contentsMargins().top()
+        line_height = 0
+
+        for item in self.itemList:
+            next_x = x + item.sizeHint().width() + self.space_x
+            if next_x - self.space_x > rect.right() - self.contentsMargins().right() and line_height > 0:
+                x = rect.x() + self.contentsMargins().left()
+                y = y + line_height + self.space_y
+                next_x = x + item.sizeHint().width() + self.space_x
+                line_height = 0
+
+            item.setGeometry(QRect(QPoint(x, y), item.sizeHint()))
+
+            x = next_x
+            line_height = max(line_height, item.sizeHint().height())
+
+        return y + line_height - rect.y() + self.contentsMargins().bottom()
+
+class AssetIconWidget(QWidget):
+
+    LABEL_COMMON_HEIGHT = 25
+
+    def __init__(self, asset, icon_size=250, parent=None):
+        """
+        :param vive.model.Asset asset:
+        :param int icon_size: 썸네일 아이콘의 사이즈. 기본값은 100이다.
+        :param AssetLoaderWindow parent:
+        """
+        super().__init__(parent)
+        self.asset = asset
+        self.icon_size = icon_size
+        self.parent = parent
+        self.ui()
+        self.init_thumbnail(clear=True)
+    def ui(self):
+        # 위젯의 전체 사이즈를 맞춘다.
+        self.setFixedWidth(self.icon_size)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        # 애셋코드
+        display_name = self.asset
+        self.asset_code_label = QLabel(display_name)
+        main_layout.addWidget(self.asset_code_label)
+        self.asset_code_label.setAlignment(Qt.AlignCenter)
+        self.asset_code_label.setStyleSheet("""
+                    QLabel {
+                        background-color: #222;
+                    }
+                """)
+
+
+
+    def init_thumbnail(self, clear=False):
+        if not clear and os.path.isfile(self.asset.thumbnail_file):
+            icon_file = self.asset.thumbnail_file
+        else:
+            icon_file = img_path('no_image_300_300.png')
 
 def show_window():
     global AssetLoaderWindow
