@@ -31,6 +31,7 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         log.info(f'창로고 {img_path("vive_initial_logo.png")}')
         self.setWindowIcon(QIcon(img_path('vive_initial_logo.png')))
         self.ui()
+        self.selected_assets = {}
         pass
 
     def ui(self):
@@ -219,6 +220,60 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         status_layout.addWidget(self.asset_selection_scroll)
         status_layout.addWidget(self.import_btn)
 
+    def delete_selected_item(self,item):
+        """선택한 애셋을 삭제했을 때 처리해야할 내용"""
+        element = False
+        for selected in self.selected_assets:
+            if item == self.selected_assets[selected]['item']:
+                element = selected
+                break
+        if element:
+            del self.selected_assets[element]
+            item.close()
+            item.deleteLater()
+
+    def append_asset(self, asset):
+        """
+        :param Asset asset:
+        """
+        selected_dirve_item = self.searchDriveComboBox.currentText()
+        selected_project_item = self.searchProjectComboBox.currentText()
+        selected_asset_item = self.searchAssetTypeComboBox.currentText()
+        log.info(f' 선택된 드라이브 프로젝트 어셋타입 {selected_dirve_item} {selected_project_item} {selected_asset_item}')
+        # 프로젝트 경로에 파일이 있으면 콤보박스에 추가
+        projectComboPath = os.path.join(selected_dirve_item, 'vfx', selected_project_item, 'asset', selected_asset_item)
+        rig_pub_mb_file = os.path.join(projectComboPath, asset, 'rig', 'pub', 'scenes', asset + '_rig.mb')
+        mod_pub_mb_file = os.path.join(projectComboPath, asset, 'mod', 'pub', 'scenes', asset + '_mod.mb')
+        lkd_pub_mb_file = os.path.join(projectComboPath, asset, 'lkd', 'pub', 'scenes', asset + '_default_shd.mb')
+
+        # mod, lkd, rig 파일이 모두 없다면 등록할 수 없다.
+        exists = False
+        if os.path.isfile(rig_pub_mb_file):
+            exists = True
+        if os.path.isfile(mod_pub_mb_file):
+            exists = True
+        if os.path.isfile(lkd_pub_mb_file):
+            exists = True
+        if not exists:
+            return
+
+
+        # 애셋 선택 현황 사전에 해당 애셋이 등록되어있는지 확인하고,
+        # 있다면 해당 애셋의 임포트 수량을 +1 시킨다.
+        if asset in self.selected_assets:
+            log.info(f' {asset} 선택한 어셋 리스트에 있음 ')
+            item = self.selected_assets[asset]['item']
+            #item.add_number()
+        else:
+            # AssetSelectionStatusItem 클래스 타입 인스턴스를 생성한다.
+            item = _SelectedAssetItem(asset=asset, parent=self)
+            # 아이템을 레이아웃에 추가한다.
+            self.asset_selection_scroll_layout.addWidget(item)
+
+            self.selected_assets[asset] = {
+                'item': item,
+                'asset': asset,
+            }
     def import_btn_connect(self):
         pass
 
@@ -278,6 +333,9 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         log.info(f' 선택한 drive : {selected_dirve_item}')
         log.info(f' 선택한 프로젝트 : {selected_project_item}')
         log.info(f' 선택한 프로젝트 : {selected_asset_item}')
+
+        projectComboPath = os.path.join(selected_dirve_item, 'vfx', selected_project_item, 'asset', selected_asset_item)
+
         if selected_dirve_item and selected_project_item and selected_asset_item:
             if selected_asset_item=='Asset-type':
                 self.asset_list_layout_item_remove()
@@ -290,8 +348,23 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                 print(subfolders)
                 self.asset_list_layout_item_remove()
                 for i in subfolders:
-                    item = AssetIconWidget(i, parent=self)
-                    self.asset_list_layout.addWidget(item)
+                    asset=i
+                    rig_pub_mb_file = os.path.join(projectComboPath, asset, 'rig', 'pub', 'scenes', asset + '_rig.mb')
+                    mod_pub_mb_file = os.path.join(projectComboPath, asset, 'mod', 'pub', 'scenes', asset + '_mod.mb')
+                    lkd_pub_mb_file = os.path.join(projectComboPath, asset, 'lkd', 'pub', 'scenes',
+                                                   asset + '_default_shd.mb')
+
+                    # mod, lkd, rig 파일이 모두 없다면 등록할 수 없다.
+                    exists = False
+                    if os.path.isfile(rig_pub_mb_file):
+                        exists = True
+                    if os.path.isfile(mod_pub_mb_file):
+                        exists = True
+                    if os.path.isfile(lkd_pub_mb_file):
+                        exists = True
+                    if exists==True:                    
+                        item = AssetIconWidget(i, parent=self)
+                        self.asset_list_layout.addWidget(item)
             print (self.asset_list_layout.count)
         pass
 class FlowLayout(QLayout):
@@ -401,22 +474,139 @@ class AssetIconWidget(QWidget):
         # 애셋코드
         display_name = self.asset
         self.asset_code_label = QLabel(display_name)
+        #self.asset_code_label.clacked.connect(self.printitem)
         main_layout.addWidget(self.asset_code_label)
         self.asset_code_label.setAlignment(Qt.AlignCenter)
+        self.asset_code_label.setFixedHeight(50)
         self.asset_code_label.setStyleSheet("""
                     QLabel {
                         background-color: #222;
                     }
                 """)
+        self.asset_code_button = QPushButton('select asset')
+        self.asset_code_button.clicked.connect(self.printitem)
+        main_layout.addWidget(self.asset_code_button)
 
 
-
+    def printitem(self):
+        asset=self.asset_code_label.text()
+        self.parent.append_asset(asset)
+        print (self.asset_code_label.text())
+        pass
     def init_thumbnail(self, clear=False):
         if not clear and os.path.isfile(self.asset.thumbnail_file):
             icon_file = self.asset.thumbnail_file
         else:
             icon_file = img_path('no_image_300_300.png')
 
+class _SelectedAssetItem(QFrame):
+    """어셋을 선택했을 때 우측 어셋 선택 현황 위젯에 추가될 리스트 아이템 클래스"""
+
+    def __init__(self, asset, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.ui()
+        self.set_asset(asset)
+
+    def ui(self):
+        self.setFrameShape(QFrame.Panel)
+        self.setFrameShadow(QFrame.Raised)
+
+        self.item_layout = QVBoxLayout(self)
+        self.item_layout.setContentsMargins(10, 10, 10, 10)
+        self.item_layout.setSpacing(5)
+
+        # 어셋 코드, 임포트 방식, 네임스페이스용 폼레이아웃
+        form_layout = QFormLayout()
+        form_layout.setSpacing(3)
+        self.item_layout.addLayout(form_layout)
+
+        # 썸네일
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        layout.setAlignment(Qt.AlignBottom)
+        form_layout.addRow(None, layout)
+
+        # 삭제 버튼
+        delete_button = QPushButton(' 목록에서 제거')
+        delete_button.setFixedHeight(25)
+        delete_button.clicked.connect(self.on_item_deleted)
+        layout.addWidget(delete_button)
+
+        # 어셋 코드
+        self._asset_code_field = QLineEdit()
+        #self._asset_code_field.setFixedHeight(25)
+        self._asset_code_field.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        form_layout.addRow(QLabel('애셋코드'), self._asset_code_field)
+
+        # 네임스페이스
+        self._namespace_field = QLineEdit()
+        self._namespace_field.setFixedHeight(25)
+        self._namespace_field.setPlaceholderText('Namespace')
+        form_layout.addRow(QLabel('네임스페이스'), self._namespace_field)
+
+        # 불러올 파일
+        self.file_type_combo = QComboBox()
+        self.file_type_combo.setFixedWidth(100)
+        self.file_type_combo.setFixedHeight(25)
+        form_layout.addRow(QLabel('파일 타입'), self.file_type_combo)
+
+        # 임포트 방식
+        self._import_type_combo = QComboBox()
+        self._import_type_combo.setFixedWidth(100)
+        self._import_type_combo.setFixedHeight(25)
+        self._import_type_combo.addItem('REFERENCE_MODE')
+        self._import_type_combo.addItem('IMPORT_MODE')
+        form_layout.addRow(QLabel('불러오기 방식'), self._import_type_combo)
+
+        # 임포트 할 수량
+        self._number_field = QSpinBox(self)
+        form_layout.addRow(QLabel('개수'), self._number_field)
+        self._number_field.setFixedWidth(100)
+        self._number_field.setFixedHeight(25)
+        self._number_field.setMinimum(0)
+        self._number_field.setValue(1)
+        #self._number_field.valueChanged.connect(self.set_number)
+
+    def set_asset(self,asset):
+        self.asset = asset
+        log.info(f' asset set ')
+        self._asset_code_field.setText(asset)
+        self._namespace_field.setText(asset)
+
+        selected_dirve_item = self.parent.searchDriveComboBox.currentText()
+        selected_project_item = self.parent.searchProjectComboBox.currentText()
+        selected_asset_item = self.parent.searchAssetTypeComboBox.currentText()
+        log.info(f' 선택된 드라이브 프로젝트 어셋타입 {selected_dirve_item} {selected_project_item} {selected_asset_item}')
+        # 프로젝트 경로에 파일이 있으면 콤보박스에 추가
+        projectComboPath = os.path.join(selected_dirve_item,'vfx',selected_project_item,'asset',selected_asset_item)
+        rig_pub_mb_file = os.path.join(projectComboPath,asset,'rig','pub','scenes',asset+'_rig.mb')
+        mod_pub_mb_file = os.path.join(projectComboPath, asset, 'mod', 'pub', 'scenes', asset + '_mod.mb')
+        lkd_pub_mb_file = os.path.join(projectComboPath, asset, 'lkd', 'pub', 'scenes', asset + '_default_shd.mb')
+
+        if os.path.isfile(rig_pub_mb_file):
+            log.info(f' rig pub file { rig_pub_mb_file }')
+            self.file_type_combo.addItem('rig')
+        else:
+            log.info(f' rig pub file None : {rig_pub_mb_file}')
+
+        if os.path.isfile(mod_pub_mb_file):
+            log.info(f' rig pub file {mod_pub_mb_file}')
+            self.file_type_combo.addItem('mod')
+        else:
+            log.info(f' rig pub file None : {mod_pub_mb_file}')
+
+        if os.path.isfile(lkd_pub_mb_file):
+            log.info(f' rig pub file {lkd_pub_mb_file}')
+            self.file_type_combo.addItem('lkd')
+        else:
+            log.info(f' rig pub file None : {lkd_pub_mb_file}')
+    def on_item_deleted(self):
+        """현재 아이템을 삭제하는 메소드"""
+        log.info(f'delete === {self._asset_code_field.text()} === item')
+        self.parent.delete_selected_item(self)
+    pass
 def show_window():
     global AssetLoaderWindow
 
