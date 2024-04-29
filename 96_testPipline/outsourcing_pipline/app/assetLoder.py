@@ -8,9 +8,11 @@ from PySide2.QtWidgets import *
 from PySide2 import __version__
 from maya.app.general import mayaMixin
 import pymel.core as pm
+import maya.cmds as cmds
 from outsourcing_pipline.config import INHOUSETOOLS_ICON_PATH
 importlib.reload( outsourcing_pipline.config)
 import os
+
 # 로그
 log = outsourcing_pipline.log.get_logger('asset_loader')
 log.info(' 마야에서 로그가 프린트 되는지 체크 ')
@@ -275,6 +277,94 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                 'asset': asset,
             }
     def import_btn_connect(self):
+        log.info(f' asset 불러오기')
+        selected = []
+
+        # 어셋 현황에 있는 위젯을 분석한다.
+        for i in range(self.asset_selection_scroll_layout.count()):
+            sel = self.asset_selection_scroll_layout.itemAt(i).widget()
+            print (sel.get_asset())
+            selected.append({
+                'asset': sel.get_asset(),
+                'namespace': sel.get_namespace(),
+                'file_type': sel.get_file_type(),
+                'import_mode': sel.get_import_mode(),
+                'number': sel.get_number(),
+            })
+        # 처리한 위젯을 리스트에서 제거한다.
+        for i in reversed(range(self.asset_selection_scroll_layout.count())):
+            w = self.asset_selection_scroll_layout.itemAt(i).widget()
+            w.setParent(None)
+        log.info(f' 선택한 어셋 리스트??? {selected}')
+        for sel in selected:
+            asset = sel['asset']
+            log.debug(f'asset : {asset}')
+            selected_dirve_item = self.searchDriveComboBox.currentText()
+            selected_project_item = self.searchProjectComboBox.currentText()
+            selected_asset_item = self.searchAssetTypeComboBox.currentText()
+            log.info(f' 선택된 드라이브 프로젝트 어셋타입 {selected_dirve_item} {selected_project_item} {selected_asset_item}')
+            # 프로젝트 경로에 파일이 있으면 콤보박스에 추가
+            projectComboPath = os.path.join(selected_dirve_item, 'vfx', selected_project_item, 'asset',
+                                            selected_asset_item)
+            rig_pub_mb_file = os.path.join(projectComboPath, asset, 'rig', 'pub', 'scenes', asset + '_rig.mb')
+            mod_pub_mb_file = os.path.join(projectComboPath, asset, 'mod', 'pub', 'scenes', asset + '_mod.mb')
+            lkd_pub_mb_file = os.path.join(projectComboPath, asset, 'lkd', 'pub', 'scenes', asset + '_default_shd.mb')
+
+            apath = os.path.join(projectComboPath, asset)
+            log.info(f'apath : {apath}')
+            for i in range(sel['number']):
+                if sel['file_type'] == 'mod':
+                    pub_file = mod_pub_mb_file
+                elif sel['file_type'] == 'lkd':
+                    pub_file = lkd_pub_mb_file
+                else:
+                    pub_file = rig_pub_mb_file
+
+                log.info(f'pub_file : {pub_file}')
+                if not os.path.isfile(pub_file):
+                    log.error('pub_file does not exist.')
+                    continue
+                secne_reference = pm.ls(type='reference')
+                count = {}
+                count_key = sel['namespace']
+                if count_key in count:
+                    count[count_key] += 1
+                else:
+                    count[count_key] = 1
+                for i in secne_reference:
+                    log.info(f'레퍼런스이름  : {i}')
+                    if i.find('UNKNOWN_REF_NODE') != -1:
+                        pass
+                    elif i.find('sharedReferenceNode') != -1:
+                        pass
+                    else:
+                        top_group_name = pm.referenceQuery(i, nodes=1)[0].rsplit(':', 1)[1]
+                        count_key = top_group_name
+                        if count_key in count:
+                            count[count_key] += 1
+                        else:
+                            count[count_key] = 1
+                namespace000 = f"{sel['namespace']}{count[sel['namespace']]:03d}"
+                log.info(f' new namespace  : {namespace000}')
+                if sel['import_mode'] == 'REFERENCE_MODE':
+                    nodes = cmds.file(
+                        pub_file,
+                        reference=True,
+                        ignoreVersion=True,
+                        namespace=namespace000,
+                        prompt=False,
+                        returnNewNodes=True
+                    )
+                else:
+                    nodes = cmds.file(
+                        pub_file,
+                        i=True,
+                        ignoreVersion=True,
+                        namespace=sel['namespace'],
+                        prompt=False,
+                        returnNewNodes=True
+                    )
+        self.selected_assets = {}
         pass
 
     def asset_list_layout_item_remove(self):
@@ -362,7 +452,7 @@ class AssetLoaderWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                         exists = True
                     if os.path.isfile(lkd_pub_mb_file):
                         exists = True
-                    if exists==True:                    
+                    if exists==True:
                         item = AssetIconWidget(i, parent=self)
                         self.asset_list_layout.addWidget(item)
             print (self.asset_list_layout.count)
@@ -568,7 +658,20 @@ class _SelectedAssetItem(QFrame):
         self._number_field.setMinimum(0)
         self._number_field.setValue(1)
         #self._number_field.valueChanged.connect(self.set_number)
+    def get_asset(self):
+        return self.asset
 
+    def get_namespace(self):
+        return self._namespace_field.text()
+
+    def get_file_type(self):
+        return self.file_type_combo.currentText()
+
+    def get_import_mode(self):
+        return self._import_type_combo.currentText()
+
+    def get_number(self):
+        return self._number_field.value()
     def set_asset(self,asset):
         self.asset = asset
         log.info(f' asset set ')
