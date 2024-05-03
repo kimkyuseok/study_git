@@ -192,21 +192,11 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         task_top_layout.setContentsMargins(0, 0, 0, 0)
         task_top_layout.setSpacing(5)
 
-        # self.search_btn = QPushButton('test')
-        # task_top_layout.addWidget(self.search_btn)
-        # 스페이서
-        #task_top_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Fixed))
-        task_filter_widget_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Fixed, QSizePolicy.Expanding))
-
-        # self.searchB_btn = QPushButton('testB')
-        # task_top_layout.addWidget(self.searchB_btn)
-
         ####################################################################################################
         # 중앙 태스크 리스트
         ####################################################################################################
         self.task_frame = QFrame()
         self.splitter.addWidget(self.task_frame)
-
         task_layout = QVBoxLayout(self.task_frame)
         task_layout.setContentsMargins(10, 0, 10, 0)
         task_layout.setSpacing(5)
@@ -217,10 +207,280 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         self.work_frame = QFrame()
         self.work_frame.setEnabled(False)
         self.splitter.addWidget(self.work_frame)
-
         work_layout = QVBoxLayout(self.work_frame)
         work_layout.setContentsMargins(10, 0, 0, 0)
         work_layout.setSpacing(3)
+
+        ##################################################
+        # 애셋, 샷 엔티티 선택 라디오버튼
+        ##################################################
+        self.main_entity_grp = QGroupBox('메인 엔티티')
+        task_filter_widget_layout.addWidget(self.main_entity_grp)
+
+        main_entity_grp_layout = QHBoxLayout(self.main_entity_grp)
+        main_entity_grp_layout.setContentsMargins(10, 10, 10, 10)
+        main_entity_grp_layout.setSpacing(10)
+        main_entity_grp_layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        # 버튼 그룹
+        self.main_entity_btn_grp = QButtonGroup()
+        #self.main_entity_btn_grp.buttonReleased.connect(self.on_entity_selection_changed)
+        # 애셋 라디오 버튼
+        self.asset_entity_radio = QRadioButton('애셋')
+        main_entity_grp_layout.addWidget(self.asset_entity_radio)
+        # 스페이서
+        main_entity_grp_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Fixed))
+        # 샷 라디오 버튼
+        self.shot_entity_radio = QRadioButton('샷')
+        main_entity_grp_layout.addWidget(self.shot_entity_radio)
+        """
+        # 버튼 그룹에 애셋, 샷 라디오 버튼 등록
+        self.main_entity_btn_grp.setId(self.asset_entity_radio, 0)
+        self.main_entity_btn_grp.setId(self.shot_entity_radio, 1)
+        self.main_entity_btn_grp.addButton(self.asset_entity_radio)
+        self.main_entity_btn_grp.addButton(self.shot_entity_radio)
+        """
+        ####################################################################################################
+        # 파이프라인 스텝
+        ####################################################################################################
+        # 태스크 필터들이 들어갈 레이아웃
+        self.task_filter_layout = QVBoxLayout(task_filter_widget)
+        task_filter_widget_layout.addLayout(self.task_filter_layout)
+        self.task_filter_layout.setContentsMargins(0, 0, 0, 0)
+        self.task_filter_layout.setSpacing(10)
+
+        self.step_filter_grp = QGroupBox('파이프라인 스텝')
+        self.task_filter_layout.addWidget(self.step_filter_grp)
+
+        self.step_filter_grp_layout = QVBoxLayout(self.step_filter_grp)
+        self.step_filter_grp_layout.setContentsMargins(10, 10, 10, 10)
+        self.step_filter_grp_layout.setSpacing(1)
+        self.step_filter_grp_layout.setAlignment(Qt.AlignTop)
+
+        # 전체 선택 / 해제 체크박스
+        cb = QCheckBox('전체')
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.is_master = True
+        #cb.toggled.connect(partial(self.set_all_checkbox_checked, self.step_filter_grp_layout))
+
+        # separator
+        sep = QFrame()
+        self.step_filter_grp_layout.addWidget(sep)
+        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShadow(QFrame.Sunken)
+        sep.setFixedHeight(12)
+
+        cb = QCheckBox('mod')
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.setIcon(QIcon(img_path('step/step_modeling.png')))
+        #cb.sg_step = ShotgridPipelineStep.MODELING
+        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__mod')
+        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        cb = QCheckBox('lkd')
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.setIcon(QIcon(img_path('step/step_lookdev.png')))
+        #cb.sg_step = ShotgridPipelineStep.LOOKDEV
+        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__lkd')
+        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        cb = QCheckBox('rig')
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.setIcon(QIcon(img_path('step/step_rigging.png')))
+        #cb.sg_step = ShotgridPipelineStep.RIGGING
+        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__rig')
+        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        cb = QCheckBox('cfx')
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.setIcon(QIcon(img_path('step/step_cfx.png')))
+        #cb.sg_step = ShotgridPipelineStep.CFX_ASSET
+        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__cfx')
+        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        step_code = 'mm'
+        cb = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.setIcon(QIcon(img_path('step/step_matchmove.png')))
+        #cb.sg_step = ShotgridPipelineStep.MATCHMOVE
+        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        step_code = 'ani'
+        cb = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.setIcon(QIcon(img_path('step/step_animation.png')))
+        #cb.sg_step = ShotgridPipelineStep.ANIMATION
+        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        step_code = 'lit'
+        cb = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.setIcon(QIcon(img_path('step/step_lighting.png')))
+        #cb.sg_step = ShotgridPipelineStep.LIGHTING
+        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        step_code = 'fx'
+        cb = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.setIcon(QIcon(img_path('step/step_fx.png')))
+        #cb.sg_step = ShotgridPipelineStep.FX
+        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        step_code = 'comp'
+        cb = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(cb)
+        #cb.setIcon(QIcon(img_path('step/step_composition.png')))
+        #cb.sg_step = ShotgridPipelineStep.COMPOSITION
+        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        ##################################################
+        # 메인 태스크 리스트 위젯
+        ##################################################
+        self.task_list_widget = QTableWidget()
+        self.task_list_widget.setEnabled(False)
+        #self.task_list_widget.itemSelectionChanged.connect(self.on_task_list_selection_changed)
+        #self.task_list_widget.itemDoubleClicked.connect(self.on_task_list_item_double_clicked)
+        task_layout.addWidget(self.task_list_widget)
+
+        ##################################################
+        # wip 작업 파일 리스트
+        ##################################################
+        # wip 경로 필드
+        layout = QHBoxLayout()
+        work_layout.addLayout(layout)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(1)
+        layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+
+        layout.addWidget(QLabel('WIPs'))
+        layout.addItem(QSpacerItem(5, 0))
+
+        self.wip_path_field = QLineEdit()
+        layout.addWidget(self.wip_path_field)
+        self.wip_path_field.setFixedHeight(20)
+
+        # wip 경로 복사하기 버튼
+        btn = QPushButton('C')
+        layout.addWidget(btn)
+        btn.setFixedSize(20, 20)
+        #btn.clicked.connect(partial(self.copy_path_to_clipboard, self.wip_path_field))
+
+        # wip 경로 열기 버튼
+        btn = QPushButton('O')
+        layout.addWidget(btn)
+        btn.setFixedSize(20, 20)
+        #btn.clicked.connect(partial(self.open_work_path, '', mode='wip'))
+
+        # wip 파일 리스트
+        self.wip_list_widget = QListWidget()
+        work_layout.addWidget(self.wip_list_widget)
+        #self.wip_list_widget.itemSelectionChanged.connect(self.on_wip_list_selection_changed)
+        #self.wip_list_widget.doubleClicked.connect(self.on_wip_list_double_clicked)
+
+        ##################################################
+        # 스페이서
+        ##################################################
+        work_layout.addItem(QSpacerItem(0, 30))
+
+        ##################################################
+        # pub 작업 파일 리스트
+        ##################################################
+        # pub 경로 필드
+        layout = QHBoxLayout()
+        work_layout.addLayout(layout)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(1)
+        layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+
+        # pub 타이틀
+        layout.addWidget(QLabel('PUBs'))
+        layout.addItem(QSpacerItem(5, 0))
+
+        self.pub_path_field = QLineEdit()
+        layout.addWidget(self.pub_path_field)
+        self.pub_path_field.setFixedHeight(20)
+
+        # pub 경로 복사하기 버튼
+        btn = QPushButton('C')
+        layout.addWidget(btn)
+        btn.setFixedSize(20, 20)
+        # btn.clicked.connect(partial(self.copy_path_to_clipboard, self.pub_path_field))
+
+        # pub 경로 열기 버튼
+        btn = QPushButton('O')
+        layout.addWidget(btn)
+        btn.setFixedSize(20, 20)
+        # btn.clicked.connect(partial(self.open_work_path, '', mode='pub'))
+
+        # pub 씬 파일 리스트 위젯
+        self.pub_list_widget = QListWidget()
+        work_layout.addWidget(self.pub_list_widget)
+        # self.pub_list_widget.itemSelectionChanged.connect(self.on_pub_list_selection_changed)
+        # self.pub_list_widget.doubleClicked.connect(self.on_pub_list_double_clicked)
+
+        ####################################################################################################
+        # 애셋 타입 필터
+        ####################################################################################################
+        self.asset_type_filter_grp = QGroupBox('애셋타입')
+        self.task_filter_layout.addWidget(self.asset_type_filter_grp)
+
+        #if self.is_shot_entity():
+        #    self.asset_type_filter_grp.setVisible(False)
+
+        self.asset_type_filter_grp_layout = QVBoxLayout(self.asset_type_filter_grp)
+        self.asset_type_filter_grp_layout.setContentsMargins(10, 10, 10, 10)
+        self.asset_type_filter_grp_layout.setSpacing(1)
+        self.asset_type_filter_grp_layout.setAlignment(Qt.AlignTop)
+
+        # 전체 선택 / 해제 체크박스
+        cb = QCheckBox('전체')
+        self.asset_type_filter_grp_layout.addWidget(cb)
+        #cb.is_master = True
+        #cb.toggled.connect(partial(self.set_all_checkbox_checked, self.asset_type_filter_grp_layout))
+
+        # separator
+        sep = QFrame()
+        self.asset_type_filter_grp_layout.addWidget(sep)
+        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShadow(QFrame.Sunken)
+        sep.setFixedHeight(12)
+
+        for atype in ['character', 'prop', 'vehicle', 'env', 'crowd', 'location', 'fx']:
+            cb = QCheckBox(atype)
+            self.asset_type_filter_grp_layout.addWidget(cb)
+            #cb.setObjectName(f'{self.FILTER_PREFIX}__asset_types__{atype}')
+            #cb.toggled.connect(self.on_filter_checkbox_toggled)
+
+        ####################################################################################################
+        # 시퀀스 필터
+        ####################################################################################################
+        self.sequence_filter_grp = QGroupBox('시퀀스')
+        self.task_filter_layout.addWidget(self.sequence_filter_grp)
+
+        #if self.is_asset_entity():
+        #    self.sequence_filter_grp.setVisible(False)
+
+        self.sequence_filter_grp_layout = QVBoxLayout(self.sequence_filter_grp)
+        self.sequence_filter_grp_layout.setContentsMargins(10, 10, 10, 10)
+        self.sequence_filter_grp_layout.setSpacing(1)
+        self.sequence_filter_grp_layout.setAlignment(Qt.AlignTop)
+
+        # 전체 선택 / 해제 체크박스
+        cb = QCheckBox('전체')
+        self.sequence_filter_grp_layout.addWidget(cb)
+        #cb.is_master = True
+        #cb.toggled.connect(partial(self.set_all_checkbox_checked, self.sequence_filter_grp_layout))
+
+        # separator
+        sep = QFrame()
+        self.sequence_filter_grp_layout.addWidget(sep)
+        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShadow(QFrame.Sunken)
+        sep.setFixedHeight(12)
 
     def searchDriveComboBox_change(self):
         # option var  = 가 있으면 처리를 한다.
