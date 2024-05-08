@@ -223,7 +223,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         main_entity_grp_layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         # 버튼 그룹
         self.main_entity_btn_grp = QButtonGroup()
-        #self.main_entity_btn_grp.buttonReleased.connect(self.on_entity_selection_changed)
+        self.main_entity_btn_grp.buttonReleased.connect(self.on_entity_selection_changed)
         # 애셋 라디오 버튼
         self.asset_entity_radio = QRadioButton('애셋')
         main_entity_grp_layout.addWidget(self.asset_entity_radio)
@@ -232,13 +232,13 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         # 샷 라디오 버튼
         self.shot_entity_radio = QRadioButton('샷')
         main_entity_grp_layout.addWidget(self.shot_entity_radio)
-        """
+
         # 버튼 그룹에 애셋, 샷 라디오 버튼 등록
-        self.main_entity_btn_grp.setId(self.asset_entity_radio, 0)
-        self.main_entity_btn_grp.setId(self.shot_entity_radio, 1)
-        self.main_entity_btn_grp.addButton(self.asset_entity_radio)
-        self.main_entity_btn_grp.addButton(self.shot_entity_radio)
-        """
+        #self.main_entity_btn_grp.setId(self.asset_entity_radio, 0)
+        #self.main_entity_btn_grp.setId(self.shot_entity_radio, 1)
+        self.main_entity_btn_grp.addButton(self.asset_entity_radio,0)
+        self.main_entity_btn_grp.addButton(self.shot_entity_radio,1)
+
         ####################################################################################################
         # 파이프라인 스텝
         ####################################################################################################
@@ -497,10 +497,23 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                     self.searchProjectComboBox.addItem(i)
         # 프로젝트 추가 완료
     def searchProjectComboBox_change(self):
+        selected_item = self.searchProjectComboBox.currentText()
+        log.info( f'Project : {selected_item}')
         pass
     def searchStepTypeComboBox_change(self):
         pass
-
+    def on_entity_selection_changed(self):
+        # 애셋이 선택되었을 경우
+        if self.asset_entity_radio.isChecked():
+            sel = 0
+        # 샷이 선택되었을 경우
+        elif self.shot_entity_radio.isChecked():
+            sel = 1
+        # 아무 것도 선택되지 않았을 경우(물론 이런 상황이 없어야 한다)
+        else:
+            sel = -1
+        print (sel)
+        pass
 def show_window():
     global TaskManagerWindow
 
