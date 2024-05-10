@@ -14,6 +14,7 @@ import maya.cmds as cmds
 from outsourcing_pipline.config import INHOUSETOOLS_ICON_PATH
 importlib.reload( outsourcing_pipline.config)
 import os
+import re
 
 # 로그
 log = outsourcing_pipline.log.get_logger('taskManager 00')
@@ -215,6 +216,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         # 애셋, 샷 엔티티 선택 라디오버튼
         ##################################################
         self.main_entity_grp = QGroupBox('메인 엔티티')
+        self.main_entity_grp.setFixedHeight(90)
         task_filter_widget_layout.addWidget(self.main_entity_grp)
 
         main_entity_grp_layout = QHBoxLayout(self.main_entity_grp)
@@ -269,74 +271,86 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         sep.setFrameShadow(QFrame.Sunken)
         sep.setFixedHeight(12)
 
-        cb = QCheckBox('mod')
-        self.step_filter_grp_layout.addWidget(cb)
+        self.cb_mod = QCheckBox('mod')
+        self.step_filter_grp_layout.addWidget(self.cb_mod)
+
         #cb.setIcon(QIcon(img_path('step/step_modeling.png')))
         #cb.sg_step = ShotgridPipelineStep.MODELING
         #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__mod')
         #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
-        cb = QCheckBox('lkd')
-        self.step_filter_grp_layout.addWidget(cb)
+        self.cb_lkd = QCheckBox('lkd')
+        self.step_filter_grp_layout.addWidget(self.cb_lkd)
         #cb.setIcon(QIcon(img_path('step/step_lookdev.png')))
         #cb.sg_step = ShotgridPipelineStep.LOOKDEV
         #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__lkd')
         #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
-        cb = QCheckBox('rig')
-        self.step_filter_grp_layout.addWidget(cb)
+        self.cb_rig = QCheckBox('rig')
+        self.step_filter_grp_layout.addWidget(self.cb_rig)
         #cb.setIcon(QIcon(img_path('step/step_rigging.png')))
         #cb.sg_step = ShotgridPipelineStep.RIGGING
         #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__rig')
         #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
-        cb = QCheckBox('cfx')
-        self.step_filter_grp_layout.addWidget(cb)
+        self.cb_cfx = QCheckBox('cfx')
+        self.step_filter_grp_layout.addWidget(self.cb_cfx)
         #cb.setIcon(QIcon(img_path('step/step_cfx.png')))
         #cb.sg_step = ShotgridPipelineStep.CFX_ASSET
         #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__cfx')
         #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'mm'
-        cb = QCheckBox(step_code)
-        self.step_filter_grp_layout.addWidget(cb)
+        self.cb_mm = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(self.cb_mm)
         #cb.setIcon(QIcon(img_path('step/step_matchmove.png')))
         #cb.sg_step = ShotgridPipelineStep.MATCHMOVE
         #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
         #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'ani'
-        cb = QCheckBox(step_code)
-        self.step_filter_grp_layout.addWidget(cb)
+        self.cb_ani = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(self.cb_ani)
         #cb.setIcon(QIcon(img_path('step/step_animation.png')))
         #cb.sg_step = ShotgridPipelineStep.ANIMATION
         #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
         #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'lit'
-        cb = QCheckBox(step_code)
-        self.step_filter_grp_layout.addWidget(cb)
+        self.cb_lit = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(self.cb_lit)
         #cb.setIcon(QIcon(img_path('step/step_lighting.png')))
         #cb.sg_step = ShotgridPipelineStep.LIGHTING
         #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
         #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'fx'
-        cb = QCheckBox(step_code)
-        self.step_filter_grp_layout.addWidget(cb)
+        self.cb_fx = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(self.cb_fx)
         #cb.setIcon(QIcon(img_path('step/step_fx.png')))
         #cb.sg_step = ShotgridPipelineStep.FX
         #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
         #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'comp'
-        cb = QCheckBox(step_code)
-        self.step_filter_grp_layout.addWidget(cb)
+        self.cb_comp = QCheckBox(step_code)
+        self.step_filter_grp_layout.addWidget(self.cb_comp)
         #cb.setIcon(QIcon(img_path('step/step_composition.png')))
         #cb.sg_step = ShotgridPipelineStep.COMPOSITION
         #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
         #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
+        # step list
+        self.step_filter_list = []
+        self.step_filter_list.append(self.cb_mod)
+        self.step_filter_list.append(self.cb_lkd)
+        self.step_filter_list.append(self.cb_rig)
+        self.step_filter_list.append(self.cb_cfx)
+        self.step_filter_list.append(self.cb_mm)
+        self.step_filter_list.append(self.cb_ani)
+        self.step_filter_list.append(self.cb_lit)
+        self.step_filter_list.append(self.cb_fx)
+        self.step_filter_list.append(self.cb_comp)
         ##################################################
         # 메인 태스크 리스트 위젯
         ##################################################
@@ -472,9 +486,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         # 전체 선택 / 해제 체크박스
         cb = QCheckBox('전체')
         self.sequence_filter_grp_layout.addWidget(cb)
-        #cb.is_master = True
-        #cb.toggled.connect(partial(self.set_all_checkbox_checked, self.sequence_filter_grp_layout))
-
+        self.sequence_filter_list=[]
         # separator
         sep = QFrame()
         self.sequence_filter_grp_layout.addWidget(sep)
@@ -499,11 +511,93 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
     def searchProjectComboBox_change(self):
         selected_item = self.searchProjectComboBox.currentText()
         log.info( f'Project : {selected_item}')
-        pass
+        # 엔티티 변경이 되었다면 테스크리스트에 내용을 추가한다.
+        self.init_task_list()
+    pass
+
     def searchStepTypeComboBox_change(self):
         pass
+
     def on_entity_selection_changed(self):
-        # 애셋이 선택되었을 경우
+        sel = self.get_main_entity()
+        print(sel)
+        if sel == 0:
+            self.cb_mod.setVisible(True)
+            self.cb_lkd.setVisible(True)
+            self.cb_rig.setVisible(True)
+            self.cb_mm.setVisible(False)
+            self.cb_ani.setVisible(False)
+            self.cb_lit.setVisible(False)
+            self.cb_fx.setVisible(False)
+            self.cb_comp.setVisible(False)
+            self.asset_type_filter_grp.setVisible(True)
+            self.sequence_filter_grp.setVisible(False)
+            # check
+            self.cb_rig.setChecked(True)
+        elif sel == 1:
+            self.cb_mod.setVisible(False)
+            self.cb_lkd.setVisible(False)
+            self.cb_rig.setVisible(False)
+            self.cb_mm.setVisible(True)
+            self.cb_ani.setVisible(True)
+            self.cb_lit.setVisible(True)
+            self.cb_fx.setVisible(True)
+            self.cb_comp.setVisible(True)
+            self.asset_type_filter_grp.setVisible(False)
+            self.sequence_filter_grp.setVisible(True)
+            # check
+            self.cb_ani.setChecked(True)
+        else:
+            self.cb_mod.setVisible(True)
+            self.cb_lkd.setVisible(True)
+            self.cb_rig.setVisible(True)
+            self.cb_mm.setVisible(True)
+            self.cb_ani.setVisible(True)
+            self.cb_lit.setVisible(True)
+            self.cb_fx.setVisible(True)
+            self.cb_comp.setVisible(True)
+            self.asset_type_filter_grp.setVisible(True)
+            self.sequence_filter_grp.setVisible(True)
+        if sel ==1:
+            # shot 이니깐 시컨스 넣어준다.
+            # 1 현재 드라이브
+            selected_drive_item = self.searchDriveComboBox.currentText()
+            log.info(f' 선택한 drive 아이템 : {selected_drive_item}')
+            # 2 현재 프로젝트
+            selected_project_item = self.searchProjectComboBox.currentText()
+            log.info(f' 선택한  Project 아이템: {selected_project_item}')
+            # 드라이브랑 프로젝트가 있으면 시컨스 리스트를 얻는다.
+            if (selected_drive_item!='-drive-') and (selected_project_item!='-project-'):
+                log.info(f' drive {selected_drive_item} project {selected_project_item}')
+                sequence_path = os.path.join(selected_drive_item,'vfx',selected_project_item,'shot')
+                log.info(f' sequence {sequence_path} ')
+                # 폴더 내 시컨스폴더만 가져온다.
+                # 주어진 경로의 모든 항목을 가져옴.
+                items = os.listdir(sequence_path)
+                episode_list=[]
+                for item in items:
+                    # 전체 경로 생성
+                    pattern = r'e\d{3}'
+                    if re.match(pattern,item):
+                        full_path = os.path.join(sequence_path,item)
+                        if os.path.isdir(full_path):
+                            print(full_path)
+                            episode_list.append(item)
+                # 기존에 시컨스아이템 있으면 삭제하기
+                for i in self.sequence_filter_list:
+                    i.deleteLater()
+                self.sequence_filter_list=[]
+                for i in episode_list:
+                    cb = QCheckBox(i)
+                    self.sequence_filter_grp_layout.addWidget(cb)
+                    self.sequence_filter_list.append(cb)
+                # 옵션바가 있어서 마지막으로 저장한 에피소드 체크하기
+
+        # 엔티티 변경이 되었다면 테스크리스트에 내용을 추가한다.
+        self.init_task_list()
+        pass
+
+    def get_main_entity(self):
         if self.asset_entity_radio.isChecked():
             sel = 0
         # 샷이 선택되었을 경우
@@ -512,8 +606,50 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         # 아무 것도 선택되지 않았을 경우(물론 이런 상황이 없어야 한다)
         else:
             sel = -1
-        print (sel)
+        return sel
+    def get_step_filter(self):
+        selected_mainentity_item = self.get_main_entity()
+        checklist=['mod','lkd','rig','cfx']
+        if selected_mainentity_item == 1:
+            checklist = ['cfx','mm','ani','lit','fx','comp']
+        check_checkbox=[]
+        for i in self.step_filter_list:
+            if i.isChecked():
+                if i.text() in checklist:
+                    check_checkbox.append(i)
+        return check_checkbox
+
+
+    def init_task_list(self):
+        # 이 명령이 떨어지면
+        # 1 현재 드라이브
+        selected_drive_item = self.searchDriveComboBox.currentText()
+        log.info(f' 선택한 drive 아이템 : {selected_drive_item}')
+        # 2 현재 프로젝트
+        selected_project_item = self.searchProjectComboBox.currentText()
+        log.info(f' 선택한  Project 아이템: {selected_project_item}')
+        # 3 현재 메인 엔티티
+        selected_mainentity_item = self.get_main_entity()
+        str_selected_mainentity = 'asset'
+        if selected_mainentity_item == 1:
+            str_selected_mainentity = 'shot'
+        elif selected_mainentity_item == -1:
+            str_selected_mainentity = 'none'
+        else:
+            pass
+        log.info(f' 선택한  MainEntity 아이템: {str_selected_mainentity}')
+        # 4 현재 파이프라인스탭
+        selected_step_list = self.get_step_filter()
+        str_step_list = []
+        for i in selected_step_list:
+            str_step_list.append(i.text())
+        log.info(f' 선택한  setep list: {str_step_list}')
+        # 5 현재 애셋타입및 시컨스 있는지 체크후
+        # 해당 테이블 리스트에 값을 넣어준다.
+        # 12345 중에 단 한개라도 없으면 패스
         pass
+
+
 def show_window():
     global TaskManagerWindow
 
