@@ -26,6 +26,7 @@ def img_path(img):
 class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
     # 윈도우 오브젝트의 이름
     WINDOW_NAME = 'task_manager_window_a'
+    OPTIONVAR_TASKMANAGER_A='optionvar_task_manager_a'
     def __init__(self):
         super(TaskManagerWindow, self).__init__()
         log.info('taskmanager 시작합니다.')
@@ -259,8 +260,9 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         self.step_filter_grp_layout.setAlignment(Qt.AlignTop)
 
         # 전체 선택 / 해제 체크박스
-        cb = QCheckBox('전체')
-        self.step_filter_grp_layout.addWidget(cb)
+        self.step_cb = QCheckBox('전체')
+        self.step_filter_grp_layout.addWidget(self.step_cb)
+        self.step_cb.stateChanged.connect(self.step_cb_changed)
         #cb.is_master = True
         #cb.toggled.connect(partial(self.set_all_checkbox_checked, self.step_filter_grp_layout))
 
@@ -354,6 +356,20 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         ##################################################
         # 메인 태스크 리스트 위젯
         ##################################################
+        search_pushbutton=QPushButton('옵션 기억 및 서치')
+        task_layout.addWidget(search_pushbutton)
+        search_pushbutton.setStyleSheet("""
+                                        font-size: 13pt; 
+                                        color: black;                               
+                                        border: 1px solid orange;
+                                        background-color: orange;                                
+                                        border-radius: 8px;
+                                        padding: 5px 10px;
+                                        font-weight:bold;
+                                        """)
+
+        search_pushbutton.clicked.connect(self.search_pushbutton_clicked)
+        
         self.task_list_widget = QTableWidget()
         self.task_list_widget.setEnabled(False)
         #self.task_list_widget.itemSelectionChanged.connect(self.on_task_list_selection_changed)
@@ -451,8 +467,9 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         self.asset_type_filter_grp_layout.setAlignment(Qt.AlignTop)
 
         # 전체 선택 / 해제 체크박스
-        cb = QCheckBox('전체')
-        self.asset_type_filter_grp_layout.addWidget(cb)
+        self.asset_cb = QCheckBox('전체')
+        self.asset_type_filter_grp_layout.addWidget(self.asset_cb)
+        self.asset_cb.stateChanged.connect(self.asset_cb_changed)
         #cb.is_master = True
         #cb.toggled.connect(partial(self.set_all_checkbox_checked, self.asset_type_filter_grp_layout))
 
@@ -462,10 +479,11 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         sep.setFrameShape(QFrame.HLine)
         sep.setFrameShadow(QFrame.Sunken)
         sep.setFixedHeight(12)
-
+        self.asset_cb_list=[]
         for atype in ['character', 'prop', 'vehicle', 'env', 'crowd', 'location', 'fx']:
             cb = QCheckBox(atype)
             self.asset_type_filter_grp_layout.addWidget(cb)
+            self.asset_cb_list.append(cb)
             #cb.setObjectName(f'{self.FILTER_PREFIX}__asset_types__{atype}')
             #cb.toggled.connect(self.on_filter_checkbox_toggled)
 
@@ -484,8 +502,9 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         self.sequence_filter_grp_layout.setAlignment(Qt.AlignTop)
 
         # 전체 선택 / 해제 체크박스
-        cb = QCheckBox('전체')
-        self.sequence_filter_grp_layout.addWidget(cb)
+        self.sequence_cb = QCheckBox('전체')
+        self.sequence_filter_grp_layout.addWidget(self.sequence_cb)
+        self.sequence_cb.stateChanged.connect(self.sequence_cb_changed)
         self.sequence_filter_list=[]
         # separator
         sep = QFrame()
@@ -517,6 +536,43 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
 
     def searchStepTypeComboBox_change(self):
         pass
+
+    def sequence_cb_changed(self,state):
+        if state==2:
+            for i in self.sequence_filter_list:
+                i.setChecked(True)
+        else:
+            for i in self.sequence_filter_list:
+                i.setChecked(False)
+
+    def asset_cb_changed(self,state):
+        if state==2:
+            for i in self.asset_cb_list:
+                i.setChecked(True)
+        else:
+            for i in self.asset_cb_list:
+                i.setChecked(False)
+    def step_cb_changed(self,state):
+        if state ==2:
+            self.cb_mod.setChecked(True)
+            self.cb_lkd.setChecked(True)
+            self.cb_rig.setChecked(True)
+            self.cb_cfx.setChecked(True)
+            self.cb_mm.setChecked(True)
+            self.cb_ani.setChecked(True)
+            self.cb_lit.setChecked(True)
+            self.cb_fx.setChecked(True)
+            self.cb_comp.setChecked(True)
+        else:
+            self.cb_mod.setChecked(False)
+            self.cb_lkd.setChecked(False)
+            self.cb_rig.setChecked(False)
+            self.cb_cfx.setChecked(False)
+            self.cb_mm.setChecked(False)
+            self.cb_ani.setChecked(False)
+            self.cb_lit.setChecked(False)
+            self.cb_fx.setChecked(False)
+            self.cb_comp.setChecked(False)
 
     def on_entity_selection_changed(self):
         sel = self.get_main_entity()
@@ -621,6 +677,13 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
 
 
     def init_task_list(self):
+        # 모든값이 정삭정으로 있는지 체크
+        str_set_option = ''
+        check_option_drive = False
+        check_option_project = False
+        check_option_main_entity = False
+        check_option_step = False
+        check_option_asset_sequence = False
         # 이 명령이 떨어지면
         # 1 현재 드라이브
         selected_drive_item = self.searchDriveComboBox.currentText()
@@ -645,11 +708,57 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
             str_step_list.append(i.text())
         log.info(f' 선택한  setep list: {str_step_list}')
         # 5 현재 애셋타입및 시컨스 있는지 체크후
+        asset_sequence_list=[]
+        if selected_mainentity_item == 1:
+            for i in self.sequence_filter_list:
+                if i.isChecked():
+                    asset_sequence_list.append(i.text())
+        elif selected_mainentity_item == -1:
+            pass
+        else:
+            for i in self.asset_cb_list():
+                if i.isChecked():
+                    asset_sequence_list.append(i.text())
+        log.info(f' 선택한  asset sequence list: {asset_sequence_list}')
         # 해당 테이블 리스트에 값을 넣어준다.
         # 12345 중에 단 한개라도 없으면 패스
+        if selected_drive_item != '-drive-':
+            check_option_drive = True
+            str_set_option += str_set_option + selected_drive_item
+        if selected_project_item != '-project-':
+            check_option_project = True
+            str_set_option += str_set_option + ',' + selected_project_item
+        if selected_mainentity_item != -1:
+            check_option_main_entity = True
+            str_set_option += str_set_option + ',' + str(selected_mainentity_item)
+        for i in selected_step_list:
+            check_option_step = True
+            str_set_option += str_set_option + ',' + i.text()
+        if selected_mainentity_item == 1:
+            for i in self.sequence_filter_list:
+                if i.isChecked():
+                    check_option_asset_sequence = True
+                    str_set_option += str_set_option + ',' + i.text()
+        elif selected_mainentity_item == -1:
+            pass
+        else:
+            for i in self.asset_cb_list:
+                if i.isChecked():
+                    check_option_asset_sequence = True
+                    str_set_option += str_set_option + ',' + i.text()
+
+        if check_option_drive and check_option_project and check_option_main_entity and check_option_step and check_option_asset_sequence:
+            self.set_optionvar_a(str_set_option)
+
+
+    def set_optionvar_a(self,optionA):
+        cmds.optionVar(sv=(self.OPTIONVAR_TASKMANAGER_A,optionA))
         pass
 
-
+    def search_pushbutton_clicked(self):
+        self.init_task_list()
+        print ( cmds.optionVar(q=self.OPTIONVAR_TASKMANAGER_A) )
+        pass
 def show_window():
     global TaskManagerWindow
 
