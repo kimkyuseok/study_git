@@ -38,6 +38,8 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         log.info(f'창 로고 {img_path("vive_initial_logo.png")}')
         self.setWindowIcon(QIcon(img_path('vive_initial_logo.png')))
         self.ui()
+        self.get_optionvar_a()
+        log.info(f' 이전 저장했던 옵션이 있는지 체크 ')
 
     def ui(self):
         log.info('task manager ui 시작합니다.')
@@ -531,7 +533,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         selected_item = self.searchProjectComboBox.currentText()
         log.info( f'Project : {selected_item}')
         # 엔티티 변경이 되었다면 테스크리스트에 내용을 추가한다.
-        self.init_task_list()
+        #self.init_task_list()
     pass
 
     def searchStepTypeComboBox_change(self):
@@ -650,7 +652,8 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                 # 옵션바가 있어서 마지막으로 저장한 에피소드 체크하기
 
         # 엔티티 변경이 되었다면 테스크리스트에 내용을 추가한다.
-        self.init_task_list()
+        #self.init_task_list()
+        #self.get_optionvar_a()
         pass
 
     def get_main_entity(self):
@@ -716,7 +719,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         elif selected_mainentity_item == -1:
             pass
         else:
-            for i in self.asset_cb_list():
+            for i in self.asset_cb_list:
                 if i.isChecked():
                     asset_sequence_list.append(i.text())
         log.info(f' 선택한  asset sequence list: {asset_sequence_list}')
@@ -724,40 +727,111 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         # 12345 중에 단 한개라도 없으면 패스
         if selected_drive_item != '-drive-':
             check_option_drive = True
-            str_set_option += str_set_option + selected_drive_item
+            str_set_option = str_set_option + selected_drive_item
         if selected_project_item != '-project-':
             check_option_project = True
-            str_set_option += str_set_option + ',' + selected_project_item
+            str_set_option = str_set_option + ',' + selected_project_item
         if selected_mainentity_item != -1:
             check_option_main_entity = True
-            str_set_option += str_set_option + ',' + str(selected_mainentity_item)
+            str_set_option = str_set_option + ',' + str(selected_mainentity_item)
         for i in selected_step_list:
             check_option_step = True
-            str_set_option += str_set_option + ',' + i.text()
+            str_set_option = str_set_option + ',' + i.text()
         if selected_mainentity_item == 1:
             for i in self.sequence_filter_list:
                 if i.isChecked():
                     check_option_asset_sequence = True
-                    str_set_option += str_set_option + ',' + i.text()
+                    str_set_option = str_set_option + ',' + i.text()
         elif selected_mainentity_item == -1:
             pass
         else:
             for i in self.asset_cb_list:
                 if i.isChecked():
                     check_option_asset_sequence = True
-                    str_set_option += str_set_option + ',' + i.text()
+                    str_set_option = str_set_option + ',' + i.text()
 
         if check_option_drive and check_option_project and check_option_main_entity and check_option_step and check_option_asset_sequence:
+            cmds.optionVar(sv=(self.OPTIONVAR_TASKMANAGER_A, ''))
             self.set_optionvar_a(str_set_option)
 
 
     def set_optionvar_a(self,optionA):
         cmds.optionVar(sv=(self.OPTIONVAR_TASKMANAGER_A,optionA))
-        pass
+
+
+    def get_optionvar_a(self):
+        return_dic={}
+        get_string = ( cmds.optionVar(q=self.OPTIONVAR_TASKMANAGER_A) )
+        if len(get_string) > 4:
+            get_list=(get_string.split(','))
+            self.searchDriveComboBox.setCurrentText(get_list[0])
+            return_dic['drive']=get_list[0]
+            self.searchProjectComboBox.setCurrentText(get_list[1])
+            return_dic['project'] = get_list[1]
+            if int(get_list[2]) == 0:
+                self.asset_entity_radio.setChecked(True)
+                return_dic['main_entity'] = 'asset'
+            else:
+                self.shot_entity_radio.setChecked(True)
+                return_dic['main_entity'] = 'shot'
+            self.on_entity_selection_changed()
+            step_list = []
+            for i in get_list[3:]:
+                if i in ['mod','lkd','rig','cfx','mm','ani','lit','fx','comp']:
+                    for j in self.step_filter_list:
+                        # log.info(f' 선택 된 스텝{j.text()} {i}')
+                        if j.text() == i:
+                            j.setChecked(True)
+                            step_list.append(i)
+            return_dic['step'] = step_list
+            asset_list = []
+            for i in get_list[3:]:
+                if i in ['character', 'prop', 'vehicle', 'env', 'crowd', 'location', 'fx']:
+                    for j in self.asset_cb_list:
+                        if j.text() == i:
+                            j.setChecked(True)
+                            asset_list.append(i)
+            return_dic['asset'] = asset_list
+            sequence_list = []
+            for i in get_list[3:]:
+                for j in self.sequence_filter_list:
+                    if j.text() == i:
+                        j.setChecked(True)
+                        sequence_list.append(i)
+            return_dic['sequence'] = sequence_list
+        return return_dic
+
+    def get_shot_code(self,path_a):
+        # sequence path 를 주면 샷 폴더 패치를 반환한다.
+        pattenrn1=r"e\d+_s\d+_c\d+"
+        pattenrn2=r"e\d+_s\d+_\d+"
+        return_list = []
+        items = os.listdir(path_a)
+        for item in items:
+            # check folder
+            if os.path.isdir(os.path.join(path_a,item)):
+                if re.match(pattenrn1,item) or re.match(pattenrn2,item):
+                    return_list.append(item)
+        return return_list
 
     def search_pushbutton_clicked(self):
         self.init_task_list()
-        print ( cmds.optionVar(q=self.OPTIONVAR_TASKMANAGER_A) )
+        get_dic = self.get_optionvar_a()
+        log.info(f'테이블 위젯 시작')
+        log.info(f'해드 만들기')
+        project_path = os.path.join(get_dic['drive'],'vfx',get_dic['project'])
+        main_entity_path = os.path.join(project_path,get_dic['main_entity'])
+        log.info(f'project path {project_path}')
+        log.info(f'entity path {main_entity_path}')
+        for i in get_dic['sequence']:
+            sequence_a = os.path.join(main_entity_path,i)
+            log.info(f'sequence path {sequence_a}')
+            for j in self.get_shot_code(sequence_a):
+                log.info(f'샷 패치 {j}')
+        HEADER_LABELS_ASSET = ['Type', 'Code', 'Name', 'Task']
+        HEADER_LABELS_SHOT = ['Sequence', 'Scene', 'Shot', 'Task']
+        self.task_list_widget.setColumnCount(5)
+        self.task_list_widget.setHorizontalHeaderLabels(HEADER_LABELS_SHOT)
         pass
 def show_window():
     global TaskManagerWindow
