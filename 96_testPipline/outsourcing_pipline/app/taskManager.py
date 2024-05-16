@@ -34,7 +34,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
             pm.deleteUI(self.WINDOW_NAME, window=True)
         self.setObjectName(self.WINDOW_NAME)
         self.setWindowTitle(self.WINDOW_NAME)
-        self.setGeometry(200, 200, 1000, 800)
+        self.setGeometry(200, 200, 1700, 800)
         log.info(f'창 로고 {img_path("vive_initial_logo.png")}')
         self.setWindowIcon(QIcon(img_path('vive_initial_logo.png')))
         self.ui()
@@ -373,9 +373,9 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         search_pushbutton.clicked.connect(self.search_pushbutton_clicked)
         
         self.task_list_widget = QTableWidget()
-        self.task_list_widget.setEnabled(False)
-        #self.task_list_widget.itemSelectionChanged.connect(self.on_task_list_selection_changed)
-        #self.task_list_widget.itemDoubleClicked.connect(self.on_task_list_item_double_clicked)
+        self.task_list_widget.setEnabled(True)
+        self.task_list_widget.itemSelectionChanged.connect(self.on_task_list_selection_changed)
+        self.task_list_widget.itemDoubleClicked.connect(self.on_task_list_item_double_clicked)
         task_layout.addWidget(self.task_list_widget)
 
         ##################################################
@@ -387,8 +387,10 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(1)
         layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        wips_label = QLabel('WIPs')
+        wips_label.setStyleSheet('font-size: 10pt;')
 
-        layout.addWidget(QLabel('WIPs'))
+        layout.addWidget(wips_label)
         layout.addItem(QSpacerItem(5, 0))
 
         self.wip_path_field = QLineEdit()
@@ -801,6 +803,16 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
             return_dic['sequence'] = sequence_list
         return return_dic
 
+    def get_asst_code(self,path_a):
+        # 어셋 코드를 주면 리턴할게있나?
+        return_list=[]
+        items = os.listdir(path_a)
+        for item in items:
+            # check folder
+            if os.path.isdir(os.path.join(path_a, item)):
+                return_list.append(item)
+        return return_list
+
     def get_shot_code(self,path_a):
         # sequence path 를 주면 샷 폴더 패치를 반환한다.
         pattenrn1=r"e\d+_s\d+_c\d+"
@@ -814,6 +826,82 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                     return_list.append(item)
         return return_list
 
+    def on_task_list_selection_changed(self):
+        selected_item = self.task_list_widget.selectedItems()
+        if selected_item:
+            rows = set()
+            for item in selected_item:
+                rows.add(item.row())
+            for row in rows:
+                for column in range(self.task_list_widget.columnCount()):
+                    item = self.task_list_widget.item(row,column)
+                    item.setSelected(True)
+        #self.on_task_list_item_double_clicked()
+
+    def current_drive_project_entity(self):
+        # 1 현재 드라이브
+        selected_drive_item = self.searchDriveComboBox.currentText()
+        #log.info(f' 선택한 drive 아이템 : {selected_drive_item}')
+        # 2 현재 프로젝트
+        selected_project_item = self.searchProjectComboBox.currentText()
+        #log.info(f' 선택한  Project 아이템: {selected_project_item}')
+        # 3 현재 메인 엔티티
+        selected_mainentity_item = self.get_main_entity()
+        str_selected_mainentity = 'asset'
+        if selected_mainentity_item == 1:
+            str_selected_mainentity = 'shot'
+        elif selected_mainentity_item == -1:
+            str_selected_mainentity = 'none'
+        else:
+            pass
+        return [selected_drive_item,selected_project_item,str_selected_mainentity]
+    def on_task_list_item_double_clicked(self):
+        selected_item = self.task_list_widget.selectedItems()
+        if len(selected_item) == 4:
+            #log.info(f'{selected_item}')
+            # 선택한 아이템의 작업 path 를 가져온다.
+            current_dpe = self.current_drive_project_entity()
+            row = selected_item[0].row()
+            log.info(f' get table item {row} {current_dpe}')
+            if current_dpe[2] == 'shot':
+                entity_path = os.path.join(current_dpe[0],'vfx',current_dpe[1],current_dpe[2])
+                log.info(f' get table item A {entity_path}')
+                sequence_item = self.task_list_widget.item(row, 0)
+                sequence_path = os.path.join(entity_path,sequence_item.text())
+                log.info(f' get table item B {sequence_path}')
+                shot_item = self.task_list_widget.item(row, 2)
+                shot_path = os.path.join(sequence_path, shot_item.text())
+                log.info(f' get table item C {shot_path}')
+                task_item = self.task_list_widget.item(row, 3)
+                task_path = os.path.join(shot_path,task_item.text())
+                log.info(f' get table item D {task_path}')
+                if task_item.text() not in ['lit','fx']:
+                    wip_path = os.path.join(task_path,'wip','scenes')
+                elif task_item.text() in ['lit','fx']:
+                    wip_path = os.path.join(task_path,'wip','maya','scenes')
+                else:
+                    pass
+                log.info(f' get table item E {wip_path}')
+                # pass
+            elif current_dpe[2] == 'asset':
+                entity_path = os.path.join(current_dpe[0], 'vfx', current_dpe[1], current_dpe[2])
+                log.info(f' get table item A {entity_path}')
+                sequence_item = self.task_list_widget.item(row, 0)
+                sequence_path = os.path.join(entity_path, sequence_item.text())
+                log.info(f' get table item B {sequence_path}')
+                shot_item = self.task_list_widget.item(row, 2)
+                shot_path = os.path.join(sequence_path, shot_item.text())
+                log.info(f' get table item C {shot_path}')
+                task_item = self.task_list_widget.item(row, 3)
+                task_path = os.path.join(shot_path, task_item.text())
+                log.info(f' get table item D {task_path}')
+                wip_path = os.path.join(task_path,'wip','scenes')
+                log.info(f' get table item E {wip_path}')
+                # 룩뎁은 테스크가 여러개일수 있음 ex default_shd  , default_grm 등등.
+            else:
+                pass
+
+        pass
     def search_pushbutton_clicked(self):
         self.init_task_list()
         get_dic = self.get_optionvar_a()
@@ -823,15 +911,73 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         main_entity_path = os.path.join(project_path,get_dic['main_entity'])
         log.info(f'project path {project_path}')
         log.info(f'entity path {main_entity_path}')
+        shot_table_item = []
         for i in get_dic['sequence']:
             sequence_a = os.path.join(main_entity_path,i)
             log.info(f'sequence path {sequence_a}')
             for j in self.get_shot_code(sequence_a):
-                log.info(f'샷 패치 {j}')
-        HEADER_LABELS_ASSET = ['Type', 'Code', 'Name', 'Task']
-        HEADER_LABELS_SHOT = ['Sequence', 'Scene', 'Shot', 'Task']
-        self.task_list_widget.setColumnCount(5)
-        self.task_list_widget.setHorizontalHeaderLabels(HEADER_LABELS_SHOT)
+                log.info(f'샷 패치 {i} {j}')
+                shot_table_item.append([i,j])
+        asset_table_item = []
+        for i in get_dic['asset']:
+            asset_a = os.path.join(main_entity_path,i)
+            log.info(f'asset path {asset_a}')
+            for j in self.get_asst_code(asset_a):
+                log.info(f'어셋 타입 및 코드 이름  {i} {j}')
+                asset_table_item.append([i, j])
+        log.info(f' step {get_dic["step"]}')
+        header_labels_asset = ['Type', 'Code', 'Name', 'Task']
+        header_labels_shot = ['Sequence', 'Scene', 'Shot', 'Task']
+        self.task_list_widget.setColumnCount(4)
+        if get_dic['main_entity'] == 'shot':
+            low_max = len(shot_table_item) * len(get_dic['step'])
+            self.task_list_widget.setRowCount(low_max)
+            self.task_list_widget.setHorizontalHeaderLabels(header_labels_shot)
+            # 기존 테이블 위젯 데이터 삭제
+            row_num = 0
+            self.task_list_widget.clearContents()
+            for i in shot_table_item:
+                for j in get_dic['step']:
+                    log.info(f' 아이템을 넣어준다. {i} {j}')
+                    sequence_item = QTableWidgetItem(i[0])
+                    scene_item = QTableWidgetItem(i[0])
+                    shot_item = QTableWidgetItem(i[1])
+                    task_item = QTableWidgetItem(j)
+                    sequence_item.setFlags(sequence_item.flags() ^ Qt.ItemIsEditable )
+                    scene_item.setFlags(scene_item.flags() ^ Qt.ItemIsEditable)
+                    shot_item.setFlags(shot_item.flags() ^ Qt.ItemIsEditable)
+                    task_item.setFlags(task_item.flags() ^ Qt.ItemIsEditable)
+                    self.task_list_widget.setItem(row_num, 0,sequence_item)
+                    self.task_list_widget.setItem(row_num, 1, scene_item)
+                    self.task_list_widget.setItem(row_num, 2, shot_item)
+                    self.task_list_widget.setItem(row_num, 3, task_item)
+                    row_num = row_num+1
+        else:
+            row_max = len(asset_table_item) * len(get_dic['step'])
+            self.task_list_widget.setRowCount(row_max)
+            self.task_list_widget.setHorizontalHeaderLabels(header_labels_asset)
+            # 기존 테이블 위젯 데이터 삭제
+            row_num = 0
+            self.task_list_widget.clearContents()
+            for i in asset_table_item:
+                for j in get_dic['step']:
+                    log.info(f' 아이템을 넣어준다. {i} {j}')
+                    type_item = QTableWidgetItem(i[0])
+                    code_item = QTableWidgetItem(i[1])
+                    name_item = QTableWidgetItem(i[1])
+                    task_item = QTableWidgetItem(j)
+                    type_item.setFlags(type_item.flags() ^ Qt.ItemIsEditable)
+                    code_item.setFlags(code_item.flags() ^ Qt.ItemIsEditable)
+                    name_item.setFlags(name_item.flags() ^ Qt.ItemIsEditable)
+                    task_item.setFlags(task_item.flags() ^ Qt.ItemIsEditable)
+                    self.task_list_widget.setItem(row_num, 0, type_item)
+                    self.task_list_widget.setItem(row_num, 1, code_item)
+                    self.task_list_widget.setItem(row_num, 2, name_item)
+                    self.task_list_widget.setItem(row_num, 3, task_item)
+                    row_num = row_num + 1
+
+        # add item
+
         pass
 def show_window():
     global TaskManagerWindow
