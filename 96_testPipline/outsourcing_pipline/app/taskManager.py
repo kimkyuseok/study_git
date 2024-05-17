@@ -3,30 +3,33 @@
 # wip 버전 업로드및 pup 버전
 import outsourcing_pipline.log
 import importlib
-#importlib.reload(outsourcing_pipline.log)
+import os
+import re
+# importlib.reload(outsourcing_pipline.log)
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
-from PySide2 import __version__
 from maya.app.general import mayaMixin
 import pymel.core as pm
 import maya.cmds as cmds
 from outsourcing_pipline.config import INHOUSETOOLS_ICON_PATH
-importlib.reload( outsourcing_pipline.config)
-import os
-import re
+importlib.reload(outsourcing_pipline.config)
+
 
 # 로그
 log = outsourcing_pipline.log.get_logger('taskManager 00')
 log.info(' 마야에서 로그가 프린트 되는지 체크 ')
 
+
 def img_path(img):
     return os.path.join(INHOUSETOOLS_ICON_PATH, img)
 
-class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
+
+class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
     # 윈도우 오브젝트의 이름
     WINDOW_NAME = 'task_manager_window_a'
-    OPTIONVAR_TASKMANAGER_A='optionvar_task_manager_a'
+    OPTIONVAR_TASKMANAGER_A = 'optionvar_task_manager_a'
+
     def __init__(self):
         super(TaskManagerWindow, self).__init__()
         log.info('taskmanager 시작합니다.')
@@ -209,7 +212,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         # 작업파일 레이아웃
         ####################################################################################################
         self.work_frame = QFrame()
-        self.work_frame.setEnabled(False)
+        self.work_frame.setEnabled(True)
         self.splitter.addWidget(self.work_frame)
         work_layout = QVBoxLayout(self.work_frame)
         work_layout.setContentsMargins(10, 0, 0, 0)
@@ -395,18 +398,19 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
 
         self.wip_path_field = QLineEdit()
         layout.addWidget(self.wip_path_field)
-        self.wip_path_field.setFixedHeight(20)
+        self.wip_path_field.setFixedHeight(30)
 
         # wip 경로 복사하기 버튼
         btn = QPushButton('C')
+        #btn.setGeometry(0,0,80,80)
         layout.addWidget(btn)
-        btn.setFixedSize(20, 20)
+        btn.setFixedSize(30, 30)
         #btn.clicked.connect(partial(self.copy_path_to_clipboard, self.wip_path_field))
 
         # wip 경로 열기 버튼
         btn = QPushButton('O')
         layout.addWidget(btn)
-        btn.setFixedSize(20, 20)
+        btn.setFixedSize(30, 30)
         #btn.clicked.connect(partial(self.open_work_path, '', mode='wip'))
 
         # wip 파일 리스트
@@ -414,6 +418,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         work_layout.addWidget(self.wip_list_widget)
         #self.wip_list_widget.itemSelectionChanged.connect(self.on_wip_list_selection_changed)
         #self.wip_list_widget.doubleClicked.connect(self.on_wip_list_double_clicked)
+        self.wip_list_widget.itemDoubleClicked.connect(self.on_wip_list_double_clicked)
 
         ##################################################
         # 스페이서
@@ -431,23 +436,26 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
         layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
         # pub 타이틀
-        layout.addWidget(QLabel('PUBs'))
+        pubs_label = QLabel('PUBs')
+        pubs_label.setStyleSheet('font-size: 10pt;')
+
+        layout.addWidget(pubs_label)
         layout.addItem(QSpacerItem(5, 0))
 
         self.pub_path_field = QLineEdit()
         layout.addWidget(self.pub_path_field)
-        self.pub_path_field.setFixedHeight(20)
+        self.pub_path_field.setFixedHeight(30)
 
         # pub 경로 복사하기 버튼
         btn = QPushButton('C')
         layout.addWidget(btn)
-        btn.setFixedSize(20, 20)
+        btn.setFixedSize(30, 30)
         # btn.clicked.connect(partial(self.copy_path_to_clipboard, self.pub_path_field))
 
         # pub 경로 열기 버튼
         btn = QPushButton('O')
         layout.addWidget(btn)
-        btn.setFixedSize(20, 20)
+        btn.setFixedSize(30, 30)
         # btn.clicked.connect(partial(self.open_work_path, '', mode='pub'))
 
         # pub 씬 파일 리스트 위젯
@@ -528,6 +536,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
             subfolders = [f for f in os.listdir(vfx_folder) if os.path.isdir(os.path.join(vfx_folder, f))]
             print(subfolders)
             if subfolders:
+                self.searchProjectComboBox.clear()
                 for i in subfolders:
                     self.searchProjectComboBox.addItem(i)
         # 프로젝트 추가 완료
@@ -877,11 +886,19 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                 log.info(f' get table item D {task_path}')
                 if task_item.text() not in ['lit','fx']:
                     wip_path = os.path.join(task_path,'wip','scenes')
+                    pub_path = os.path.join(task_path,'pub','scenes','versions')
                 elif task_item.text() in ['lit','fx']:
                     wip_path = os.path.join(task_path,'wip','maya','scenes')
+                    pub_path = os.path.join(task_path, 'pub', 'maya','scenes')
                 else:
                     pass
-                log.info(f' get table item E {wip_path}')
+                log.info(f' get table item E {wip_path} {pub_path}')
+                self.wip_path_field.setText(wip_path)
+                self.pub_path_field.setText(pub_path)
+                self.wip_list_widget.clear()
+                self.pub_list_widget.clear()
+                self.set_path_field(self.wip_list_widget,wip_path,r"(.*?)_v(\d{3})_w(\d{2}).mb")
+                self.set_path_field(self.pub_list_widget, pub_path, r"(.*?)_v(\d{3}).mb")
                 # pass
             elif current_dpe[2] == 'asset':
                 entity_path = os.path.join(current_dpe[0], 'vfx', current_dpe[1], current_dpe[2])
@@ -896,10 +913,25 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                 task_path = os.path.join(shot_path, task_item.text())
                 log.info(f' get table item D {task_path}')
                 wip_path = os.path.join(task_path,'wip','scenes')
+                pub_path = os.path.join(task_path, 'pub', 'scenes')
                 log.info(f' get table item E {wip_path}')
                 # 룩뎁은 테스크가 여러개일수 있음 ex default_shd  , default_grm 등등.
+                self.wip_path_field.setText(wip_path)
+                self.pub_path_field.setText(pub_path)
             else:
                 pass
+
+    def set_path_field(self,field_a,path_a,pattern_a):
+        # field and path and pattern 주면 맞는지 확인하고 리스트에 넣는다.
+        # wip_list_widget , pub_list_widget
+        if os.path.isdir(path_a):
+            items = os.listdir(path_a)
+            field_a.clear()
+            for item in items:
+                if re.match(pattern_a,item):
+                    log.info(f'{item}')
+                    add_item = QListWidgetItem(item)
+                    field_a.addItem(add_item)
 
         pass
     def search_pushbutton_clicked(self):
@@ -947,6 +979,15 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                     scene_item.setFlags(scene_item.flags() ^ Qt.ItemIsEditable)
                     shot_item.setFlags(shot_item.flags() ^ Qt.ItemIsEditable)
                     task_item.setFlags(task_item.flags() ^ Qt.ItemIsEditable)
+
+                    if self.get_is_step_folder([i[0],i[1],j]):
+                        log.info(f' 테이블위젯아이템 색상 노랑')
+                        task_item.setBackground(QColor('yellow'))
+                    else:
+                        log.info(f' 테이블위젯아이템 색상 회색')
+                        task_item.setBackground(QColor('lightgray'))
+                    task_item.setForeground(QColor('black'))
+
                     self.task_list_widget.setItem(row_num, 0,sequence_item)
                     self.task_list_widget.setItem(row_num, 1, scene_item)
                     self.task_list_widget.setItem(row_num, 2, shot_item)
@@ -970,6 +1011,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
                     code_item.setFlags(code_item.flags() ^ Qt.ItemIsEditable)
                     name_item.setFlags(name_item.flags() ^ Qt.ItemIsEditable)
                     task_item.setFlags(task_item.flags() ^ Qt.ItemIsEditable)
+
                     self.task_list_widget.setItem(row_num, 0, type_item)
                     self.task_list_widget.setItem(row_num, 1, code_item)
                     self.task_list_widget.setItem(row_num, 2, name_item)
@@ -978,7 +1020,24 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin,QMainWindow):
 
         # add item
 
+    def get_is_step_folder(self,table_widget_item_text):
+        log.info(f'테이블위젯 체크 시작')
+        return_num = False
+        list_item = table_widget_item_text
+        get_dic = self.get_optionvar_a()
+        get_path_a = os.path.join(get_dic['drive'],'vfx',get_dic['project'],get_dic['main_entity'] )
+        get_path_b = os.path.join(get_path_a,list_item[0],list_item[1],list_item[2])
+        if os.path.isdir(get_path_b):
+            return_num = True
+        return return_num
+
+
+    def on_wip_list_double_clicked(self,item):
+        wip_file_path = self.wip_path_field.text()
+        #wip_select_file = self.wip_list_widget.selected
+        log.info(f'{wip_file_path} {item.text()}')
         pass
+
 def show_window():
     global TaskManagerWindow
 
@@ -990,3 +1049,11 @@ def show_window():
 
     taskmanagerwin = TaskManagerWindow()
     taskmanagerwin.show()
+
+# 시컨스 추가 필요 ( 마우스오른쪽 )
+# 샷 추가 필요 ( 마우스 오른쪽 )
+# wip ( 최초작업시작 폴더생성 )
+#       파일오픈
+#       버전 추가
+#       폴더열기
+#       펍 하기 
