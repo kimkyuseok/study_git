@@ -932,6 +932,13 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                     log.info(f'{item}')
                     add_item = QListWidgetItem(item)
                     field_a.addItem(add_item)
+            if len(items)==0:
+                add_item = QListWidgetItem('None Data')
+                field_a.addItem(add_item)
+        else:
+            field_a.clear()
+            add_item = QListWidgetItem('None Folder')
+            field_a.addItem(add_item)
 
         pass
     def search_pushbutton_clicked(self):
@@ -1056,4 +1063,4 @@ def show_window():
 #       파일오픈
 #       버전 추가
 #       폴더열기
-#       펍 하기 
+#       펍 하기
