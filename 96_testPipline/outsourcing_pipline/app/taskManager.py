@@ -380,6 +380,8 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.task_list_widget.setEnabled(True)
         self.task_list_widget.itemSelectionChanged.connect(self.on_task_list_selection_changed)
         self.task_list_widget.itemDoubleClicked.connect(self.on_task_list_item_double_clicked)
+        self.task_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.task_list_widget.customContextMenuRequested.connect(self.task_list_context_menu)
         task_layout.addWidget(self.task_list_widget)
 
         ##################################################
@@ -420,6 +422,8 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         #self.wip_list_widget.itemSelectionChanged.connect(self.on_wip_list_selection_changed)
         #self.wip_list_widget.doubleClicked.connect(self.on_wip_list_double_clicked)
         self.wip_list_widget.itemDoubleClicked.connect(self.on_wip_list_double_clicked)
+        self.wip_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.wip_list_widget.customContextMenuRequested.connect(self.wip_show_context_menu)
 
         ##################################################
         # 스페이서
@@ -1053,6 +1057,10 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         wip_file_path = self.wip_path_field.text()
         #wip_select_file = self.wip_list_widget.selected
         log.info(f'{wip_file_path} {item.text()}')
+        file_name = os.path.join(wip_file_path,item.text())
+        # 바로 오픈하지 않고 열겠습니까? 필요해보임
+        if os.path.isfile(file_name):
+            cmds.file(file_name, force=True, open=True, prompt=False, ignoreVersion=True, type='mayaBinary')
         pass
 
     def copy_path_to_clipboard_wip(self):
@@ -1107,9 +1115,80 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 menu.addAction(action)
                 menu.exec_(event.globalPos())
 
+    def wip_show_context_menu(self,position):
+        # 오른쪽 메뉴 생성
+        menu = QMenu()
+        checkStart=False
+        if self.wip_list_widget.count() == 1:
+            item = self.wip_list_widget.item(0)
+            if item.text()[0] == 'N':
+                checkStart=True
+        elif self.wip_list_widget.count() == 0:
+            checkStart=True
+        else:
+            pass
+        if checkStart:
+            action = QAction(" Fist Working Environment Setup ", self)
+            action.triggered.connect(self.wip_right_fist_working_setup)
+            menu.addAction(action)
+            menu.addSeparator()
 
+        action = QAction(" wip copy folder path", self)
+        action.triggered.connect(self.wip_right_wip_copy_path)
+        menu.addAction(action)
 
+        action = QAction(" wip folder open", self)
+        action.triggered.connect(self.wip_right_open_folder)
+        menu.addAction(action)
+        menu.addSeparator()
 
+        if self.wip_list_widget.selectedItems():
+            action = QAction(" file open ", self)
+            action.triggered.connect(self.wip_right_file_open)
+            menu.addAction(action)
+
+            action = QAction(" add version", self)
+            action.triggered.connect(self.wip_right_add_version)
+            menu.addAction(action)
+            menu.addSeparator()
+            action = QAction(" Upload PUB File  ", self)
+            action.triggered.connect(self.wip_right_pub_upload)
+            menu.addAction(action)
+
+        menu.exec_(self.wip_list_widget.mapToGlobal(position))
+        pass
+
+    def wip_right_fist_working_setup(self):
+        log.info(f' 최초작업시작 ')
+        pass
+    def wip_right_pub_upload(self):
+        log.info(f' wip file upload PUB')
+        pass
+    def wip_right_open_folder(self):
+        log.info(f' wip folder open')
+        pass
+    def wip_right_wip_copy_path(self):
+        log.info(f'  wip folder path copy')
+        pass
+    def wip_right_add_version(self):
+        log.info(f'  wip right add version')
+        pass
+    def wip_right_file_open(self):
+        log.info(f' file open - wip right button')
+        pass
+
+    def task_list_context_menu(self,pos):
+        menu = QMenu(self)
+        action1 = menu.addAction(" add SHOT ")
+        action2 = menu.addAction(" add ASSET ")
+        # table pos
+        global_pos = self.task_list_widget.mapToGlobal(pos)
+        action = menu.exec_(global_pos)
+        if action == action1:
+            log.info(f' test  add shot ')
+        if action == action2:
+            log.info(f' test  add asset ')
+        pass
 def show_window():
     global TaskManagerWindow
 
@@ -1125,8 +1204,8 @@ def show_window():
 # 시컨스 추가 필요 ( 마우스오른쪽 )
 # 샷 추가 필요 ( 마우스 오른쪽 )
 # wip ( 최초작업시작 폴더생성 )
-#       파일오픈
-#       버전 추가
+#       파일오픈 -
+#       버전 추가 -
 #       패치 카피 v
 #       폴더열기 v
 #       펍 하기 ( 임시펍 )
