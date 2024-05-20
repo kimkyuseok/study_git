@@ -5,6 +5,7 @@ import outsourcing_pipline.log
 import importlib
 import os
 import re
+import pyperclip
 # importlib.reload(outsourcing_pipline.log)
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -405,13 +406,13 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         #btn.setGeometry(0,0,80,80)
         layout.addWidget(btn)
         btn.setFixedSize(30, 30)
-        #btn.clicked.connect(partial(self.copy_path_to_clipboard, self.wip_path_field))
+        btn.clicked.connect(self.copy_path_to_clipboard_wip)
 
         # wip 경로 열기 버튼
         btn = QPushButton('O')
         layout.addWidget(btn)
         btn.setFixedSize(30, 30)
-        #btn.clicked.connect(partial(self.open_work_path, '', mode='wip'))
+        btn.clicked.connect(self.open_work_path_wip)
 
         # wip 파일 리스트
         self.wip_list_widget = QListWidget()
@@ -450,13 +451,13 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         btn = QPushButton('C')
         layout.addWidget(btn)
         btn.setFixedSize(30, 30)
-        # btn.clicked.connect(partial(self.copy_path_to_clipboard, self.pub_path_field))
+        btn.clicked.connect(self.copy_path_to_clipboard_pub)
 
         # pub 경로 열기 버튼
         btn = QPushButton('O')
         layout.addWidget(btn)
         btn.setFixedSize(30, 30)
-        # btn.clicked.connect(partial(self.open_work_path, '', mode='pub'))
+        btn.clicked.connect(self.open_work_path_pub)
 
         # pub 씬 파일 리스트 위젯
         self.pub_list_widget = QListWidget()
@@ -503,6 +504,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         # 시퀀스 필터
         ####################################################################################################
         self.sequence_filter_grp = QGroupBox('시퀀스')
+        self.sequence_filter_grp.installEventFilter(self)
         self.task_filter_layout.addWidget(self.sequence_filter_grp)
 
         #if self.is_asset_entity():
@@ -893,6 +895,10 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 else:
                     pass
                 log.info(f' get table item E {wip_path} {pub_path}')
+                if wip_path.find(':/')!=-1:
+                    wip_path=wip_path.replace(':/',':\\')
+                if pub_path.find('/')!=-1:
+                    pub_path=pub_path.replace('/','\\')
                 self.wip_path_field.setText(wip_path)
                 self.pub_path_field.setText(pub_path)
                 self.wip_list_widget.clear()
@@ -916,6 +922,10 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 pub_path = os.path.join(task_path, 'pub', 'scenes')
                 log.info(f' get table item E {wip_path}')
                 # 룩뎁은 테스크가 여러개일수 있음 ex default_shd  , default_grm 등등.
+                if wip_path.find(':/') != -1:
+                    wip_path = wip_path.replace(':/', ':\\')
+                if pub_path.find('/') != -1:
+                    pub_path = pub_path.replace('/', '\\')
                 self.wip_path_field.setText(wip_path)
                 self.pub_path_field.setText(pub_path)
             else:
@@ -1045,6 +1055,61 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         log.info(f'{wip_file_path} {item.text()}')
         pass
 
+    def copy_path_to_clipboard_wip(self):
+        log.info(f' wip path field')
+        field_a = self.wip_path_field
+        path = field_a.text()
+        log.info(f'{path}')
+        self.copy_path_to_clipboard(path)
+
+    def copy_path_to_clipboard_pub(self):
+        log.info(f' pub path field')
+        field_a = self.pub_path_field
+        path = field_a.text()
+        log.info(f'{path}')
+        self.copy_path_to_clipboard(path)
+
+    def copy_path_to_clipboard(self,text_a):
+        path = text_a
+        if path == '':
+            return
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        pyperclip.copy(path)
+
+    def open_work_path_wip(self):
+        field_a = self.wip_path_field
+        path = field_a.text()
+        self.open_work_path_a(path)
+
+    def open_work_path_pub(self):
+        field_a = self.pub_path_field
+        path = field_a.text()
+        self.open_work_path_a(path)
+
+    def open_work_path_a(self, text_a):
+        path = text_a
+        if os.path.isdir(path):
+            os.startfile(path)
+        else:
+            log.info(f' None Folder ')
+
+    def add_sequence(self):
+        log.info(f' add sequence')
+        pass
+
+    def eventFilter(self, source, event):
+        if event.type() == event.ContextMenu:
+            if source == self.sequence_filter_grp:
+                menu = QMenu()
+                action = QAction(" ADD Sequence ", self)
+                action.triggered.connect(self.add_sequence)
+                menu.addAction(action)
+                menu.exec_(event.globalPos())
+
+
+
+
 def show_window():
     global TaskManagerWindow
 
@@ -1062,5 +1127,6 @@ def show_window():
 # wip ( 최초작업시작 폴더생성 )
 #       파일오픈
 #       버전 추가
-#       폴더열기
-#       펍 하기
+#       패치 카피 v
+#       폴더열기 v
+#       펍 하기 ( 임시펍 )
