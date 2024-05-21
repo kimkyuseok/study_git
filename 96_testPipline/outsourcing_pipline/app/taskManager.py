@@ -26,6 +26,25 @@ def img_path(img):
     return os.path.join(INHOUSETOOLS_ICON_PATH, img)
 
 
+class AddCheckBoxSequenceDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('시컨스 체크박스 추가 ')
+        self.setFixedSize(200, 100)
+        layout = QVBoxLayout()
+        self.label = QLabel("3자리수 숫자 입력 :", self)
+        layout.addWidget(self.label)
+        self.lineEdit = QLineEdit(self)
+        layout.addWidget(self.lineEdit)
+        self.button = QPushButton('확인', self)
+        self.button.clicked.connect(self.accept)
+        layout.addWidget(self.button)
+        self.setLayout(layout)
+
+    def get_number(self):
+        return self.lineEdit.text()
+
+
 class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
     # 윈도우 오브젝트의 이름
     WINDOW_NAME = 'task_manager_window_a'
@@ -55,7 +74,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                                             background-color: #000;
                                             padding: 10px 5px;
                                             ''')
-        frameAppBanner.setGeometry(10,10,500,100)
+        frameAppBanner.setGeometry(10, 10, 500, 100)
         frameAppBanner.setFixedHeight(100)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
         window_layout = QVBoxLayout(self.centralWidget())
@@ -165,7 +184,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.searchStepTypeComboBox.addItem("ani")
         self.searchStepTypeComboBox.addItem("lit")
         self.searchStepTypeComboBox.addItem("fx")
-        #search_filter_layout.addWidget(self.searchStepTypeComboBox)
+        # search_filter_layout.addWidget(self.searchStepTypeComboBox)
         #####################
         # 메인 레이아웃
         #####################
@@ -243,10 +262,10 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         main_entity_grp_layout.addWidget(self.shot_entity_radio)
 
         # 버튼 그룹에 애셋, 샷 라디오 버튼 등록
-        #self.main_entity_btn_grp.setId(self.asset_entity_radio, 0)
-        #self.main_entity_btn_grp.setId(self.shot_entity_radio, 1)
-        self.main_entity_btn_grp.addButton(self.asset_entity_radio,0)
-        self.main_entity_btn_grp.addButton(self.shot_entity_radio,1)
+        # self.main_entity_btn_grp.setId(self.asset_entity_radio, 0)
+        # self.main_entity_btn_grp.setId(self.shot_entity_radio, 1)
+        self.main_entity_btn_grp.addButton(self.asset_entity_radio, 0)
+        self.main_entity_btn_grp.addButton(self.shot_entity_radio, 1)
 
         ####################################################################################################
         # 파이프라인 스텝
@@ -269,8 +288,8 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.step_cb = QCheckBox('전체')
         self.step_filter_grp_layout.addWidget(self.step_cb)
         self.step_cb.stateChanged.connect(self.step_cb_changed)
-        #cb.is_master = True
-        #cb.toggled.connect(partial(self.set_all_checkbox_checked, self.step_filter_grp_layout))
+        # cb.is_master = True
+        # cb.toggled.connect(partial(self.set_all_checkbox_checked, self.step_filter_grp_layout))
 
         # separator
         sep = QFrame()
@@ -282,71 +301,71 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.cb_mod = QCheckBox('mod')
         self.step_filter_grp_layout.addWidget(self.cb_mod)
 
-        #cb.setIcon(QIcon(img_path('step/step_modeling.png')))
-        #cb.sg_step = ShotgridPipelineStep.MODELING
-        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__mod')
-        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+        # cb.setIcon(QIcon(img_path('step/step_modeling.png')))
+        # cb.sg_step = ShotgridPipelineStep.MODELING
+        # cb.setObjectName(f'{self.FILTER_PREFIX}__steps__mod')
+        # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         self.cb_lkd = QCheckBox('lkd')
         self.step_filter_grp_layout.addWidget(self.cb_lkd)
-        #cb.setIcon(QIcon(img_path('step/step_lookdev.png')))
-        #cb.sg_step = ShotgridPipelineStep.LOOKDEV
-        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__lkd')
-        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+        # cb.setIcon(QIcon(img_path('step/step_lookdev.png')))
+        # cb.sg_step = ShotgridPipelineStep.LOOKDEV
+        # cb.setObjectName(f'{self.FILTER_PREFIX}__steps__lkd')
+        # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         self.cb_rig = QCheckBox('rig')
         self.step_filter_grp_layout.addWidget(self.cb_rig)
-        #cb.setIcon(QIcon(img_path('step/step_rigging.png')))
-        #cb.sg_step = ShotgridPipelineStep.RIGGING
-        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__rig')
-        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+        # cb.setIcon(QIcon(img_path('step/step_rigging.png')))
+        # cb.sg_step = ShotgridPipelineStep.RIGGING
+        # cb.setObjectName(f'{self.FILTER_PREFIX}__steps__rig')
+        # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         self.cb_cfx = QCheckBox('cfx')
         self.step_filter_grp_layout.addWidget(self.cb_cfx)
-        #cb.setIcon(QIcon(img_path('step/step_cfx.png')))
-        #cb.sg_step = ShotgridPipelineStep.CFX_ASSET
-        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__cfx')
-        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+        # cb.setIcon(QIcon(img_path('step/step_cfx.png')))
+        # cb.sg_step = ShotgridPipelineStep.CFX_ASSET
+        # cb.setObjectName(f'{self.FILTER_PREFIX}__steps__cfx')
+        # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'mm'
         self.cb_mm = QCheckBox(step_code)
         self.step_filter_grp_layout.addWidget(self.cb_mm)
-        #cb.setIcon(QIcon(img_path('step/step_matchmove.png')))
-        #cb.sg_step = ShotgridPipelineStep.MATCHMOVE
-        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
-        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+        # cb.setIcon(QIcon(img_path('step/step_matchmove.png')))
+        # cb.sg_step = ShotgridPipelineStep.MATCHMOVE
+        # cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'ani'
         self.cb_ani = QCheckBox(step_code)
         self.step_filter_grp_layout.addWidget(self.cb_ani)
-        #cb.setIcon(QIcon(img_path('step/step_animation.png')))
-        #cb.sg_step = ShotgridPipelineStep.ANIMATION
-        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
-        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+        # cb.setIcon(QIcon(img_path('step/step_animation.png')))
+        # cb.sg_step = ShotgridPipelineStep.ANIMATION
+        # cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'lit'
         self.cb_lit = QCheckBox(step_code)
         self.step_filter_grp_layout.addWidget(self.cb_lit)
-        #cb.setIcon(QIcon(img_path('step/step_lighting.png')))
-        #cb.sg_step = ShotgridPipelineStep.LIGHTING
-        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
-        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+        # cb.setIcon(QIcon(img_path('step/step_lighting.png')))
+        # cb.sg_step = ShotgridPipelineStep.LIGHTING
+        # cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'fx'
         self.cb_fx = QCheckBox(step_code)
         self.step_filter_grp_layout.addWidget(self.cb_fx)
-        #cb.setIcon(QIcon(img_path('step/step_fx.png')))
-        #cb.sg_step = ShotgridPipelineStep.FX
-        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
-        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+        # cb.setIcon(QIcon(img_path('step/step_fx.png')))
+        # cb.sg_step = ShotgridPipelineStep.FX
+        # cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         step_code = 'comp'
         self.cb_comp = QCheckBox(step_code)
         self.step_filter_grp_layout.addWidget(self.cb_comp)
-        #cb.setIcon(QIcon(img_path('step/step_composition.png')))
-        #cb.sg_step = ShotgridPipelineStep.COMPOSITION
-        #cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
-        #cb.toggled.connect(self.on_filter_checkbox_toggled)
+        # cb.setIcon(QIcon(img_path('step/step_composition.png')))
+        # cb.sg_step = ShotgridPipelineStep.COMPOSITION
+        # cb.setObjectName(f'{self.FILTER_PREFIX}__steps__{step_code}')
+        # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         # step list
         self.step_filter_list = []
@@ -362,7 +381,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         ##################################################
         # 메인 태스크 리스트 위젯
         ##################################################
-        search_pushbutton=QPushButton('옵션 기억 및 서치')
+        search_pushbutton = QPushButton('옵션 기억 및 서치')
         task_layout.addWidget(search_pushbutton)
         search_pushbutton.setStyleSheet("""
                                         font-size: 13pt; 
@@ -405,7 +424,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
         # wip 경로 복사하기 버튼
         btn = QPushButton('C')
-        #btn.setGeometry(0,0,80,80)
+        # btn.setGeometry(0, 0, 80, 80)
         layout.addWidget(btn)
         btn.setFixedSize(30, 30)
         btn.clicked.connect(self.copy_path_to_clipboard_wip)
@@ -419,8 +438,8 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         # wip 파일 리스트
         self.wip_list_widget = QListWidget()
         work_layout.addWidget(self.wip_list_widget)
-        #self.wip_list_widget.itemSelectionChanged.connect(self.on_wip_list_selection_changed)
-        #self.wip_list_widget.doubleClicked.connect(self.on_wip_list_double_clicked)
+        # self.wip_list_widget.itemSelectionChanged.connect(self.on_wip_list_selection_changed)
+        # self.wip_list_widget.doubleClicked.connect(self.on_wip_list_double_clicked)
         self.wip_list_widget.itemDoubleClicked.connect(self.on_wip_list_double_clicked)
         self.wip_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.wip_list_widget.customContextMenuRequested.connect(self.wip_show_context_menu)
@@ -475,7 +494,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.asset_type_filter_grp = QGroupBox('애셋타입')
         self.task_filter_layout.addWidget(self.asset_type_filter_grp)
 
-        #if self.is_shot_entity():
+        # if self.is_shot_entity():
         #    self.asset_type_filter_grp.setVisible(False)
 
         self.asset_type_filter_grp_layout = QVBoxLayout(self.asset_type_filter_grp)
@@ -487,8 +506,8 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.asset_cb = QCheckBox('전체')
         self.asset_type_filter_grp_layout.addWidget(self.asset_cb)
         self.asset_cb.stateChanged.connect(self.asset_cb_changed)
-        #cb.is_master = True
-        #cb.toggled.connect(partial(self.set_all_checkbox_checked, self.asset_type_filter_grp_layout))
+        # cb.is_master = True
+        # cb.toggled.connect(partial(self.set_all_checkbox_checked, self.asset_type_filter_grp_layout))
 
         # separator
         sep = QFrame()
@@ -496,13 +515,13 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         sep.setFrameShape(QFrame.HLine)
         sep.setFrameShadow(QFrame.Sunken)
         sep.setFixedHeight(12)
-        self.asset_cb_list=[]
+        self.asset_cb_list = []
         for atype in ['character', 'prop', 'vehicle', 'env', 'crowd', 'location', 'fx']:
             cb = QCheckBox(atype)
             self.asset_type_filter_grp_layout.addWidget(cb)
             self.asset_cb_list.append(cb)
-            #cb.setObjectName(f'{self.FILTER_PREFIX}__asset_types__{atype}')
-            #cb.toggled.connect(self.on_filter_checkbox_toggled)
+            # cb.setObjectName(f'{self.FILTER_PREFIX}__asset_types__{atype}')
+            # cb.toggled.connect(self.on_filter_checkbox_toggled)
 
         ####################################################################################################
         # 시퀀스 필터
@@ -511,7 +530,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.sequence_filter_grp.installEventFilter(self)
         self.task_filter_layout.addWidget(self.sequence_filter_grp)
 
-        #if self.is_asset_entity():
+        # if self.is_asset_entity():
         #    self.sequence_filter_grp.setVisible(False)
 
         self.sequence_filter_grp_layout = QVBoxLayout(self.sequence_filter_grp)
@@ -523,7 +542,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.sequence_cb = QCheckBox('전체')
         self.sequence_filter_grp_layout.addWidget(self.sequence_cb)
         self.sequence_cb.stateChanged.connect(self.sequence_cb_changed)
-        self.sequence_filter_list=[]
+        self.sequence_filter_list = []
         # separator
         sep = QFrame()
         self.sequence_filter_grp_layout.addWidget(sep)
@@ -546,33 +565,34 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 for i in subfolders:
                     self.searchProjectComboBox.addItem(i)
         # 프로젝트 추가 완료
+
     def searchProjectComboBox_change(self):
         selected_item = self.searchProjectComboBox.currentText()
-        log.info( f'Project : {selected_item}')
+        log.info(f'Project : {selected_item}')
         # 엔티티 변경이 되었다면 테스크리스트에 내용을 추가한다.
-        #self.init_task_list()
-    pass
+        # self.init_task_list()
 
     def searchStepTypeComboBox_change(self):
         pass
 
-    def sequence_cb_changed(self,state):
-        if state==2:
+    def sequence_cb_changed(self, state):
+        if state == 2:
             for i in self.sequence_filter_list:
                 i.setChecked(True)
         else:
             for i in self.sequence_filter_list:
                 i.setChecked(False)
 
-    def asset_cb_changed(self,state):
-        if state==2:
+    def asset_cb_changed(self, state):
+        if state == 2:
             for i in self.asset_cb_list:
                 i.setChecked(True)
         else:
             for i in self.asset_cb_list:
                 i.setChecked(False)
-    def step_cb_changed(self,state):
-        if state ==2:
+
+    def step_cb_changed(self, state):
+        if state == 2:
             self.cb_mod.setChecked(True)
             self.cb_lkd.setChecked(True)
             self.cb_rig.setChecked(True)
@@ -633,7 +653,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             self.cb_comp.setVisible(True)
             self.asset_type_filter_grp.setVisible(True)
             self.sequence_filter_grp.setVisible(True)
-        if sel ==1:
+        if sel == 1:
             # shot 이니깐 시컨스 넣어준다.
             # 1 현재 드라이브
             selected_drive_item = self.searchDriveComboBox.currentText()
@@ -642,26 +662,26 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             selected_project_item = self.searchProjectComboBox.currentText()
             log.info(f' 선택한  Project 아이템: {selected_project_item}')
             # 드라이브랑 프로젝트가 있으면 시컨스 리스트를 얻는다.
-            if (selected_drive_item!='-drive-') and (selected_project_item!='-project-'):
+            if (selected_drive_item != '-drive-') and (selected_project_item != '-project-'):
                 log.info(f' drive {selected_drive_item} project {selected_project_item}')
-                sequence_path = os.path.join(selected_drive_item,'vfx',selected_project_item,'shot')
+                sequence_path = os.path.join(selected_drive_item, 'vfx', selected_project_item, 'shot')
                 log.info(f' sequence {sequence_path} ')
                 # 폴더 내 시컨스폴더만 가져온다.
                 # 주어진 경로의 모든 항목을 가져옴.
                 items = os.listdir(sequence_path)
-                episode_list=[]
+                episode_list = []
                 for item in items:
                     # 전체 경로 생성
                     pattern = r'e\d{3}'
-                    if re.match(pattern,item):
-                        full_path = os.path.join(sequence_path,item)
+                    if re.match(pattern, item):
+                        full_path = os.path.join(sequence_path, item)
                         if os.path.isdir(full_path):
                             print(full_path)
                             episode_list.append(item)
                 # 기존에 시컨스아이템 있으면 삭제하기
                 for i in self.sequence_filter_list:
                     i.deleteLater()
-                self.sequence_filter_list=[]
+                self.sequence_filter_list = []
                 for i in episode_list:
                     cb = QCheckBox(i)
                     self.sequence_filter_grp_layout.addWidget(cb)
@@ -669,8 +689,8 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 # 옵션바가 있어서 마지막으로 저장한 에피소드 체크하기
 
         # 엔티티 변경이 되었다면 테스크리스트에 내용을 추가한다.
-        #self.init_task_list()
-        #self.get_optionvar_a()
+        # self.init_task_list()
+        # self.get_optionvar_a()
         pass
 
     def get_main_entity(self):
@@ -683,18 +703,18 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         else:
             sel = -1
         return sel
+
     def get_step_filter(self):
         selected_mainentity_item = self.get_main_entity()
-        checklist=['mod','lkd','rig','cfx']
+        checklist = ['mod', 'lkd', 'rig', 'cfx']
         if selected_mainentity_item == 1:
-            checklist = ['cfx','mm','ani','lit','fx','comp']
-        check_checkbox=[]
+            checklist = ['cfx', 'mm', 'ani', 'lit', 'fx', 'comp']
+        check_checkbox = []
         for i in self.step_filter_list:
             if i.isChecked():
                 if i.text() in checklist:
                     check_checkbox.append(i)
         return check_checkbox
-
 
     def init_task_list(self):
         # 모든값이 정삭정으로 있는지 체크
@@ -728,7 +748,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             str_step_list.append(i.text())
         log.info(f' 선택한  setep list: {str_step_list}')
         # 5 현재 애셋타입및 시컨스 있는지 체크후
-        asset_sequence_list=[]
+        asset_sequence_list = []
         if selected_mainentity_item == 1:
             for i in self.sequence_filter_list:
                 if i.isChecked():
@@ -771,18 +791,16 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             cmds.optionVar(sv=(self.OPTIONVAR_TASKMANAGER_A, ''))
             self.set_optionvar_a(str_set_option)
 
-
-    def set_optionvar_a(self,optionA):
-        cmds.optionVar(sv=(self.OPTIONVAR_TASKMANAGER_A,optionA))
-
+    def set_optionvar_a(self, optionA):
+        cmds.optionVar(sv=(self.OPTIONVAR_TASKMANAGER_A, optionA))
 
     def get_optionvar_a(self):
-        return_dic={}
-        get_string = ( cmds.optionVar(q=self.OPTIONVAR_TASKMANAGER_A) )
+        return_dic = {}
+        get_string = (cmds.optionVar(q=self.OPTIONVAR_TASKMANAGER_A))
         if len(get_string) > 4:
-            get_list=(get_string.split(','))
+            get_list = (get_string.split(','))
             self.searchDriveComboBox.setCurrentText(get_list[0])
-            return_dic['drive']=get_list[0]
+            return_dic['drive'] = get_list[0]
             self.searchProjectComboBox.setCurrentText(get_list[1])
             return_dic['project'] = get_list[1]
             if int(get_list[2]) == 0:
@@ -794,7 +812,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             self.on_entity_selection_changed()
             step_list = []
             for i in get_list[3:]:
-                if i in ['mod','lkd','rig','cfx','mm','ani','lit','fx','comp']:
+                if i in ['mod', 'lkd', 'rig', 'cfx', 'mm', 'ani', 'lit', 'fx', 'comp']:
                     for j in self.step_filter_list:
                         # log.info(f' 선택 된 스텝{j.text()} {i}')
                         if j.text() == i:
@@ -818,9 +836,9 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             return_dic['sequence'] = sequence_list
         return return_dic
 
-    def get_asst_code(self,path_a):
+    def get_asst_code(self, path_a):
         # 어셋 코드를 주면 리턴할게있나?
-        return_list=[]
+        return_list = []
         items = os.listdir(path_a)
         for item in items:
             # check folder
@@ -828,16 +846,16 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 return_list.append(item)
         return return_list
 
-    def get_shot_code(self,path_a):
+    def get_shot_code(self, path_a):
         # sequence path 를 주면 샷 폴더 패치를 반환한다.
-        pattenrn1=r"e\d+_s\d+_c\d+"
-        pattenrn2=r"e\d+_s\d+_\d+"
+        pattenrn1 = r"e\d+_s\d+_c\d+"
+        pattenrn2 = r"e\d+_s\d+_\d+"
         return_list = []
         items = os.listdir(path_a)
         for item in items:
             # check folder
-            if os.path.isdir(os.path.join(path_a,item)):
-                if re.match(pattenrn1,item) or re.match(pattenrn2,item):
+            if os.path.isdir(os.path.join(path_a, item)):
+                if re.match(pattenrn1, item) or re.match(pattenrn2, item):
                     return_list.append(item)
         return return_list
 
@@ -849,17 +867,17 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 rows.add(item.row())
             for row in rows:
                 for column in range(self.task_list_widget.columnCount()):
-                    item = self.task_list_widget.item(row,column)
+                    item = self.task_list_widget.item(row, column)
                     item.setSelected(True)
-        #self.on_task_list_item_double_clicked()
+        # self.on_task_list_item_double_clicked()
 
     def current_drive_project_entity(self):
         # 1 현재 드라이브
         selected_drive_item = self.searchDriveComboBox.currentText()
-        #log.info(f' 선택한 drive 아이템 : {selected_drive_item}')
+        # log.info(f' 선택한 drive 아이템 : {selected_drive_item}')
         # 2 현재 프로젝트
         selected_project_item = self.searchProjectComboBox.currentText()
-        #log.info(f' 선택한  Project 아이템: {selected_project_item}')
+        # log.info(f' 선택한  Project 아이템: {selected_project_item}')
         # 3 현재 메인 엔티티
         selected_mainentity_item = self.get_main_entity()
         str_selected_mainentity = 'asset'
@@ -869,45 +887,46 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             str_selected_mainentity = 'none'
         else:
             pass
-        return [selected_drive_item,selected_project_item,str_selected_mainentity]
+        return [selected_drive_item, selected_project_item, str_selected_mainentity]
+
     def on_task_list_item_double_clicked(self):
         selected_item = self.task_list_widget.selectedItems()
         if len(selected_item) == 4:
-            #log.info(f'{selected_item}')
+            # log.info(f'{selected_item}')
             # 선택한 아이템의 작업 path 를 가져온다.
             current_dpe = self.current_drive_project_entity()
             row = selected_item[0].row()
             log.info(f' get table item {row} {current_dpe}')
             if current_dpe[2] == 'shot':
-                entity_path = os.path.join(current_dpe[0],'vfx',current_dpe[1],current_dpe[2])
+                entity_path = os.path.join(current_dpe[0], 'vfx', current_dpe[1], current_dpe[2])
                 log.info(f' get table item A {entity_path}')
                 sequence_item = self.task_list_widget.item(row, 0)
-                sequence_path = os.path.join(entity_path,sequence_item.text())
+                sequence_path = os.path.join(entity_path, sequence_item.text())
                 log.info(f' get table item B {sequence_path}')
                 shot_item = self.task_list_widget.item(row, 2)
                 shot_path = os.path.join(sequence_path, shot_item.text())
                 log.info(f' get table item C {shot_path}')
                 task_item = self.task_list_widget.item(row, 3)
-                task_path = os.path.join(shot_path,task_item.text())
+                task_path = os.path.join(shot_path, task_item.text())
                 log.info(f' get table item D {task_path}')
-                if task_item.text() not in ['lit','fx']:
-                    wip_path = os.path.join(task_path,'wip','scenes')
-                    pub_path = os.path.join(task_path,'pub','scenes','versions')
-                elif task_item.text() in ['lit','fx']:
-                    wip_path = os.path.join(task_path,'wip','maya','scenes')
-                    pub_path = os.path.join(task_path, 'pub', 'maya','scenes')
+                if task_item.text() not in ['lit', 'fx']:
+                    wip_path = os.path.join(task_path, 'wip', 'scenes')
+                    pub_path = os.path.join(task_path, 'pub', 'scenes', 'versions')
+                elif task_item.text() in ['lit', 'fx']:
+                    wip_path = os.path.join(task_path, 'wip', 'maya', 'scenes')
+                    pub_path = os.path.join(task_path, 'pub', 'maya', 'scenes')
                 else:
                     pass
                 log.info(f' get table item E {wip_path} {pub_path}')
-                if wip_path.find(':/')!=-1:
-                    wip_path=wip_path.replace(':/',':\\')
-                if pub_path.find('/')!=-1:
-                    pub_path=pub_path.replace('/','\\')
+                if wip_path.find(':/') != -1:
+                    wip_path = wip_path.replace(':/', ':\\')
+                if pub_path.find('/') != -1:
+                    pub_path = pub_path.replace('/', '\\')
                 self.wip_path_field.setText(wip_path)
                 self.pub_path_field.setText(pub_path)
                 self.wip_list_widget.clear()
                 self.pub_list_widget.clear()
-                self.set_path_field(self.wip_list_widget,wip_path,r"(.*?)_v(\d{3})_w(\d{2}).mb")
+                self.set_path_field(self.wip_list_widget, wip_path, r"(.*?)_v(\d{3})_w(\d{2}).mb")
                 self.set_path_field(self.pub_list_widget, pub_path, r"(.*?)_v(\d{3}).mb")
                 # pass
             elif current_dpe[2] == 'asset':
@@ -922,7 +941,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 task_item = self.task_list_widget.item(row, 3)
                 task_path = os.path.join(shot_path, task_item.text())
                 log.info(f' get table item D {task_path}')
-                wip_path = os.path.join(task_path,'wip','scenes')
+                wip_path = os.path.join(task_path, 'wip', 'scenes')
                 pub_path = os.path.join(task_path, 'pub', 'scenes')
                 log.info(f' get table item E {wip_path}')
                 # 룩뎁은 테스크가 여러개일수 있음 ex default_shd  , default_grm 등등.
@@ -935,18 +954,18 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             else:
                 pass
 
-    def set_path_field(self,field_a,path_a,pattern_a):
+    def set_path_field(self, field_a, path_a, pattern_a):
         # field and path and pattern 주면 맞는지 확인하고 리스트에 넣는다.
         # wip_list_widget , pub_list_widget
         if os.path.isdir(path_a):
             items = os.listdir(path_a)
             field_a.clear()
             for item in items:
-                if re.match(pattern_a,item):
+                if re.match(pattern_a, item):
                     log.info(f'{item}')
                     add_item = QListWidgetItem(item)
                     field_a.addItem(add_item)
-            if len(items)==0:
+            if len(items) == 0:
                 add_item = QListWidgetItem('None Data')
                 field_a.addItem(add_item)
         else:
@@ -954,26 +973,25 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             add_item = QListWidgetItem('None Folder')
             field_a.addItem(add_item)
 
-        pass
     def search_pushbutton_clicked(self):
         self.init_task_list()
         get_dic = self.get_optionvar_a()
         log.info(f'테이블 위젯 시작')
         log.info(f'해드 만들기')
-        project_path = os.path.join(get_dic['drive'],'vfx',get_dic['project'])
-        main_entity_path = os.path.join(project_path,get_dic['main_entity'])
+        project_path = os.path.join(get_dic['drive'], 'vfx', get_dic['project'])
+        main_entity_path = os.path.join(project_path, get_dic['main_entity'])
         log.info(f'project path {project_path}')
         log.info(f'entity path {main_entity_path}')
         shot_table_item = []
         for i in get_dic['sequence']:
-            sequence_a = os.path.join(main_entity_path,i)
+            sequence_a = os.path.join(main_entity_path, i)
             log.info(f'sequence path {sequence_a}')
             for j in self.get_shot_code(sequence_a):
                 log.info(f'샷 패치 {i} {j}')
-                shot_table_item.append([i,j])
+                shot_table_item.append([i, j])
         asset_table_item = []
         for i in get_dic['asset']:
-            asset_a = os.path.join(main_entity_path,i)
+            asset_a = os.path.join(main_entity_path, i)
             log.info(f'asset path {asset_a}')
             for j in self.get_asst_code(asset_a):
                 log.info(f'어셋 타입 및 코드 이름  {i} {j}')
@@ -996,12 +1014,12 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                     scene_item = QTableWidgetItem(i[0])
                     shot_item = QTableWidgetItem(i[1])
                     task_item = QTableWidgetItem(j)
-                    sequence_item.setFlags(sequence_item.flags() ^ Qt.ItemIsEditable )
+                    sequence_item.setFlags(sequence_item.flags() ^ Qt.ItemIsEditable)
                     scene_item.setFlags(scene_item.flags() ^ Qt.ItemIsEditable)
                     shot_item.setFlags(shot_item.flags() ^ Qt.ItemIsEditable)
                     task_item.setFlags(task_item.flags() ^ Qt.ItemIsEditable)
 
-                    if self.get_is_step_folder([i[0],i[1],j]):
+                    if self.get_is_step_folder([i[0], i[1], j]):
                         log.info(f' 테이블위젯아이템 색상 노랑')
                         task_item.setBackground(QColor('yellow'))
                     else:
@@ -1009,7 +1027,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                         task_item.setBackground(QColor('lightgray'))
                     task_item.setForeground(QColor('black'))
 
-                    self.task_list_widget.setItem(row_num, 0,sequence_item)
+                    self.task_list_widget.setItem(row_num, 0, sequence_item)
                     self.task_list_widget.setItem(row_num, 1, scene_item)
                     self.task_list_widget.setItem(row_num, 2, shot_item)
                     self.task_list_widget.setItem(row_num, 3, task_item)
@@ -1041,23 +1059,22 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
         # add item
 
-    def get_is_step_folder(self,table_widget_item_text):
+    def get_is_step_folder(self, table_widget_item_text):
         log.info(f'테이블위젯 체크 시작')
         return_num = False
         list_item = table_widget_item_text
         get_dic = self.get_optionvar_a()
-        get_path_a = os.path.join(get_dic['drive'],'vfx',get_dic['project'],get_dic['main_entity'] )
-        get_path_b = os.path.join(get_path_a,list_item[0],list_item[1],list_item[2])
+        get_path_a = os.path.join(get_dic['drive'], 'vfx', get_dic['project'], get_dic['main_entity'])
+        get_path_b = os.path.join(get_path_a, list_item[0], list_item[1], list_item[2])
         if os.path.isdir(get_path_b):
             return_num = True
         return return_num
 
-
-    def on_wip_list_double_clicked(self,item):
+    def on_wip_list_double_clicked(self, item):
         wip_file_path = self.wip_path_field.text()
-        #wip_select_file = self.wip_list_widget.selected
+        # wip_select_file = self.wip_list_widget.selected
         log.info(f'{wip_file_path} {item.text()}')
-        file_name = os.path.join(wip_file_path,item.text())
+        file_name = os.path.join(wip_file_path, item.text())
         # 바로 오픈하지 않고 열겠습니까? 필요해보임
         if os.path.isfile(file_name):
             cmds.file(file_name, force=True, open=True, prompt=False, ignoreVersion=True, type='mayaBinary')
@@ -1077,7 +1094,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         log.info(f'{path}')
         self.copy_path_to_clipboard(path)
 
-    def copy_path_to_clipboard(self,text_a):
+    def copy_path_to_clipboard(self, text_a):
         path = text_a
         if path == '':
             return
@@ -1104,6 +1121,29 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
     def add_sequence(self):
         log.info(f' add sequence')
+        dialog = AddCheckBoxSequenceDialog(self)
+        if dialog.exec_():
+            num_str = dialog.get_number()
+            if num_str.isdigit() and len(num_str) == 3:
+                num = int(num_str)
+                self.addcheckboxesequence(num)
+            else:
+                QMessageBox.warning(self, "error", "3자리숫자를넣으세요",QMessageBox.Ok)
+
+    def addcheckboxesequence(self,num):
+        log.info(f'새로생성될 시컨스넘버 :{num}')
+        # 프로젝트 폴더 가져오기
+        get_dic = self.get_optionvar_a()
+        log.info(f'get_dic : {get_dic}')
+        path_a = [get_dic['drive'], 'vfx', get_dic['project'], get_dic['main_entity']]
+        path_b = os.path.join(path_a[0], path_a[1], path_a[2], path_a[3])
+        if os.path.isdir(path_b):
+            if os.path.isdir(os.path.join(path_b, f'e{num}')):
+                log.info(f'이미 폴더가 있음 패스')
+            else:
+                log.info(f'폴더를 생성합니다.{path_b}/e{num}')
+                os.makedirs(os.path.join(path_b,f'e{num}'))
+                self.on_entity_selection_changed()
         pass
 
     def eventFilter(self, source, event):
@@ -1115,16 +1155,16 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 menu.addAction(action)
                 menu.exec_(event.globalPos())
 
-    def wip_show_context_menu(self,position):
+    def wip_show_context_menu(self, position):
         # 오른쪽 메뉴 생성
         menu = QMenu()
-        checkStart=False
+        checkStart = False
         if self.wip_list_widget.count() == 1:
             item = self.wip_list_widget.item(0)
             if item.text()[0] == 'N':
-                checkStart=True
+                checkStart = True
         elif self.wip_list_widget.count() == 0:
-            checkStart=True
+            checkStart = True
         else:
             pass
         if checkStart:
@@ -1161,34 +1201,41 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
     def wip_right_fist_working_setup(self):
         log.info(f' 최초작업시작 ')
         pass
+
     def wip_right_pub_upload(self):
         log.info(f' wip file upload PUB')
         pass
+
     def wip_right_open_folder(self):
         log.info(f' wip folder open')
         pass
+
     def wip_right_wip_copy_path(self):
         log.info(f'  wip folder path copy')
         pass
+
     def wip_right_add_version(self):
         log.info(f'  wip right add version')
         pass
+
     def wip_right_file_open(self):
         log.info(f' file open - wip right button')
         pass
 
-    def task_list_context_menu(self,pos):
+    def task_list_context_menu(self, pos):
+        main_entity = self.get_main_entity()
         menu = QMenu(self)
-        action1 = menu.addAction(" add SHOT ")
-        action2 = menu.addAction(" add ASSET ")
+        if main_entity:
+            action1 = menu.addAction(" add SHOT ")
+        else:
+            action1 = menu.addAction(" add ASSET ")
         # table pos
         global_pos = self.task_list_widget.mapToGlobal(pos)
         action = menu.exec_(global_pos)
         if action == action1:
-            log.info(f' test  add shot ')
-        if action == action2:
-            log.info(f' test  add asset ')
-        pass
+            log.info(f' test  add {main_entity} ')
+
+
 def show_window():
     global TaskManagerWindow
 
@@ -1200,12 +1247,3 @@ def show_window():
 
     taskmanagerwin = TaskManagerWindow()
     taskmanagerwin.show()
-
-# 시컨스 추가 필요 ( 마우스오른쪽 )
-# 샷 추가 필요 ( 마우스 오른쪽 )
-# wip ( 최초작업시작 폴더생성 )
-#       파일오픈 -
-#       버전 추가 -
-#       패치 카피 v
-#       폴더열기 v
-#       펍 하기 ( 임시펍 )
