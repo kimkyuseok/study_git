@@ -29,6 +29,9 @@ def img_path(img):
 class AddTableItemShotDialog(QDialog):
     def __init__(self,get_list,parent=None):
         super().__init__(parent)
+        self.sequenceComboBox = None
+        self.lineEdit_a = None
+        self.lineEdit_b = None
         self.setWindowTitle('SHOT 추가')
         self.setFixedSize(400,350)
         layout = QVBoxLayout()
@@ -73,19 +76,20 @@ class AddTableItemShotDialog(QDialog):
         self.setLayout(layout)
 
     def update_result(self):
-        text1 = self.sequenceComboBox.currentText()
-        text2 = self.lineEdit_a.text()
-        text3 = self.lineEdit_b.text()
-        #
-        self.lineEdit_c.setText(f'{text1}_s{text2}_{text3}')
+        if self.sequenceComboBox!=None:
+            if self.lineEdit_a!=None:
+                if self.lineEdit_b!=None:
+                    text1 = self.sequenceComboBox.currentText()
+                    text2 = self.lineEdit_a.text()
+                    text3 = self.lineEdit_b.text()
+                    #
+                    self.lineEdit_c.setText(f'{text1}_s{text2}_{text3}')
 
     def get_number(self):
         # return_list = []
         # return_list.append(self.lineEdit_a.text())
         # return_list.append(self.lineEdit_b.text())
         return self.lineEdit_c.text()
-
-    pass
 
 
 class AddCheckBoxSequenceDialog(QDialog):
