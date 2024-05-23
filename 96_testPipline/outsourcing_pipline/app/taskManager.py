@@ -26,13 +26,75 @@ def img_path(img):
     return os.path.join(INHOUSETOOLS_ICON_PATH, img)
 
 
+class AddTableItemShotDialog(QDialog):
+    def __init__(self,get_list,parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('SHOT 추가')
+        self.setFixedSize(400,350)
+        layout = QVBoxLayout()
+
+        # combo
+        self.label_combo = QLabel('해당 시컨스 넘버를 선택 : ', self)
+        layout.addWidget(self.label_combo)
+        self.sequenceComboBox = QComboBox()
+        self.sequenceComboBox.addItem("-select sequence-")
+        for i in get_list:
+            self.sequenceComboBox.addItem(i)
+        self.sequenceComboBox.currentIndexChanged.connect(self.update_result)
+        self.sequenceComboBox.setCurrentText(get_list[0])
+        layout.addWidget(self.sequenceComboBox)
+        #a
+        self.label_a = QLabel('S000 샷넘버 3자리수 숫자 입력: (ex 999)', self)
+        layout.addWidget(self.label_a)
+        self.lineEdit_a = QLineEdit(self)
+        layout.addWidget(self.lineEdit_a)
+        # b
+        self.label_b = QLabel('c000 컷넘버 4자리수 숫자 입력: (ex 9999, c9999)', self)
+        layout.addWidget(self.label_b)
+        self.lineEdit_b = QLineEdit(self)
+        layout.addWidget(self.lineEdit_b)
+        #
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line)
+        # c
+        self.label_c = QLabel('생성될 SHOT 확인 :', self)
+        layout.addWidget(self.label_c)
+        self.lineEdit_c = QLineEdit(self)
+        layout.addWidget(self.lineEdit_c)
+        #
+        self.lineEdit_a.textChanged.connect(self.update_result)
+        self.lineEdit_b.textChanged.connect(self.update_result)
+
+        self.button = QPushButton('확인', self)
+        self.button.clicked.connect(self.accept)
+        layout.addWidget(self.button)
+        self.setLayout(layout)
+
+    def update_result(self):
+        text1 = self.sequenceComboBox.currentText()
+        text2 = self.lineEdit_a.text()
+        text3 = self.lineEdit_b.text()
+        #
+        self.lineEdit_c.setText(f'{text1}_s{text2}_{text3}')
+
+    def get_number(self):
+        # return_list = []
+        # return_list.append(self.lineEdit_a.text())
+        # return_list.append(self.lineEdit_b.text())
+        return self.lineEdit_c.text()
+
+    pass
+
+
 class AddCheckBoxSequenceDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle('시컨스 체크박스 추가 ')
         self.setFixedSize(200, 100)
         layout = QVBoxLayout()
-        self.label = QLabel("3자리수 숫자 입력 :", self)
+        self.label = QLabel("3자리수 숫자 입력 : (ex 999)", self)
         layout.addWidget(self.label)
         self.lineEdit = QLineEdit(self)
         layout.addWidget(self.lineEdit)
@@ -527,7 +589,9 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         # 시퀀스 필터
         ####################################################################################################
         self.sequence_filter_grp = QGroupBox('시퀀스')
-        self.sequence_filter_grp.installEventFilter(self)
+        # self.sequence_filter_grp.installEventFilter(self)
+        self.sequence_filter_grp.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.sequence_filter_grp.customContextMenuRequested.connect(self.sequence_context_menu)
         self.task_filter_layout.addWidget(self.sequence_filter_grp)
 
         # if self.is_asset_entity():
@@ -678,9 +742,12 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                         if os.path.isdir(full_path):
                             print(full_path)
                             episode_list.append(item)
+                log.info(f' 기존 시컨스 아이템 체크 {self.sequence_filter_list}')
                 # 기존에 시컨스아이템 있으면 삭제하기
                 for i in self.sequence_filter_list:
+                    i.setParent(None)
                     i.deleteLater()
+                log.info(f'  시컨스 아이템 있으면 안됨 {self.sequence_filter_list}')
                 self.sequence_filter_list = []
                 for i in episode_list:
                     cb = QCheckBox(i)
@@ -1146,15 +1213,6 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 self.on_entity_selection_changed()
         pass
 
-    def eventFilter(self, source, event):
-        if event.type() == event.ContextMenu:
-            if source == self.sequence_filter_grp:
-                menu = QMenu()
-                action = QAction(" ADD Sequence ", self)
-                action.triggered.connect(self.add_sequence)
-                menu.addAction(action)
-                menu.exec_(event.globalPos())
-
     def wip_show_context_menu(self, position):
         # 오른쪽 메뉴 생성
         menu = QMenu()
@@ -1222,10 +1280,21 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         log.info(f' file open - wip right button')
         pass
 
+    def sequence_context_menu(self,pos):
+        menu = QMenu()
+        action1 = menu.addAction("  ADD Sequence ")
+        #action.triggered.connect()
+        # table pos
+        global_pos = self.sequence_filter_grp.mapToGlobal(pos)
+        action = menu.exec_(global_pos)
+        if action == action1:
+            self.add_sequence()
+
     def task_list_context_menu(self, pos):
-        main_entity = self.get_main_entity()
+        get_dic = self.get_optionvar_a()
+        log.info(f' 선택된 시퀀스 가져오기 {get_dic}')
         menu = QMenu(self)
-        if main_entity:
+        if get_dic['main_entity'] == 'shot':
             action1 = menu.addAction(" add SHOT ")
         else:
             action1 = menu.addAction(" add ASSET ")
@@ -1233,8 +1302,23 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         global_pos = self.task_list_widget.mapToGlobal(pos)
         action = menu.exec_(global_pos)
         if action == action1:
-            log.info(f' test  add {main_entity} ')
+            log.info(f' test  add {get_dic["main_entity"]} ')
+            if get_dic['main_entity'] == 'shot':
+                dialog = AddTableItemShotDialog(get_dic['sequence'], self)
+                if dialog.exec_():
+                    num_str_list = dialog.get_number()
+                    self.AddTableItemShot(num_str_list)
 
+    def AddTableItemShot(self,num_list):
+        get_dic = self.get_optionvar_a()
+        log.info(f' 받은 데이터 {num_list} {get_dic}')
+        path_a = os.path.join(get_dic['drive'], 'vfx', get_dic['project'] ,get_dic['main_entity'])
+        ep = num_list.split('_s',1)[0]
+        if os.listdir(path_a):
+            log.info(f"생성될 폴더 {os.path.join(path_a, ep, num_list)}")
+            os.makedirs(os.path.join(path_a, ep, num_list))
+            # 다시한번 더 서치
+            self.search_pushbutton_clicked()
 
 def show_window():
     global TaskManagerWindow
