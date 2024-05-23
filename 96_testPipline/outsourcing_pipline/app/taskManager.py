@@ -1252,25 +1252,51 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             action = QAction(" Upload PUB File  ", self)
             action.triggered.connect(self.wip_right_pub_upload)
             menu.addAction(action)
-
         menu.exec_(self.wip_list_widget.mapToGlobal(position))
-        pass
 
     def wip_right_fist_working_setup(self):
         log.info(f' 최초작업시작 ')
-        pass
+        # 샷일경우 ? 아니면 스탭이 라이팅이랑 fx 가 아니면
+        get_dic = self.get_optionvar_a()
+        get_task = self.task_list_widget.selectedItems()
+        get_wip_path = self.wip_path_field.text()
+        get_pub_path = self.pub_path_field.text()
+        # 폴더가 없으면 만들기
+        self.create_directoryi(get_wip_path)
+        self.create_directoryi(get_pub_path)
+        # 최초파일 만들기
+        selected_item = self.task_list_widget.selectedItems()
+        if len(selected_item) == 4:
+            if get_dic['main_entity'] == 'shot':
+                row = selected_item[0].row()
+                step_item = self.task_list_widget.item(row, 3)
+                cut_item = self.task_list_widget.item(row, 2)
+                new_file_name = f'{cut_item.text()}_{step_item.text()}_v001_w01.mb'
+                self.create_empty_file(get_wip_path,new_file_name)
+                self.set_path_field(self.wip_list_widget, get_wip_path, r"(.*?)_v(\d{3})_w(\d{2}).mb")
+                # 파일열지 물어보기?
 
+    def create_empty_file(self, directroy, filename):
+        if not os.path.exists(directroy):
+            os.makedirs(directroy)
+        file_path = os.path.join(directroy, filename)
+        with open(file_path,'w') as file:
+            pass
+
+    def create_directoryi(self,path):
+        if not os.path.exists(path):
+            os.makedirs(path)
     def wip_right_pub_upload(self):
         log.info(f' wip file upload PUB')
         pass
 
     def wip_right_open_folder(self):
         log.info(f' wip folder open')
-        pass
+        self.open_work_path_wip()
 
     def wip_right_wip_copy_path(self):
         log.info(f'  wip folder path copy')
-        pass
+        self.copy_path_to_clipboard_wip()
 
     def wip_right_add_version(self):
         log.info(f'  wip right add version')
@@ -1278,7 +1304,16 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
     def wip_right_file_open(self):
         log.info(f' file open - wip right button')
-        pass
+        self.file_open(self.wip_path_field,self.wip_list_widget)
+
+    def file_open(self, ptah_field, list_widget):
+        # wip 과 pub 아이템( 씬 ) 파일 열기
+        file_path = ptah_field.text()
+        select_file = list_widget.selectedItems()
+        file_name = os.path.join(file_path, select_file[0].text())
+        # 바로 오픈하지 않고 열겠습니까? 필요해보임
+        if os.path.isfile(file_name):
+            cmds.file(file_name, force=True, open=True, prompt=False, ignoreVersion=True, type='mayaBinary')
 
     def sequence_context_menu(self,pos):
         menu = QMenu()
