@@ -6,6 +6,7 @@ import importlib
 import os
 import re
 import pyperclip
+import shutil
 # importlib.reload(outsourcing_pipline.log)
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -24,6 +25,53 @@ log.info(' 마야에서 로그가 프린트 되는지 체크 ')
 
 def img_path(img):
     return os.path.join(INHOUSETOOLS_ICON_PATH, img)
+
+
+class AddWipVersionDialog(QDialog):
+    def __init__(self, text_a, test_b=None, test_c=None, parent=None):
+        super().__init__(parent)
+        self.textA = text_a
+        self.setWindowTitle('Wip Version Add')
+        self.setFixedSize(400, 300)
+        layout = QVBoxLayout()
+        # a
+        self.label_a = QLabel('v000 버전 추가 : (ex 999)', self)
+        layout.addWidget(self.label_a)
+        self.lineEdit_a = QLineEdit(self)
+        layout.addWidget(self.lineEdit_a)
+        if test_b:
+            self.lineEdit_a.setText(test_b)
+        # b
+        self.label_b = QLabel('w00 버전 추가 : (ex 99)', self)
+        layout.addWidget(self.label_b)
+        self.lineEdit_b = QLineEdit(self)
+        layout.addWidget(self.lineEdit_b)
+        if test_c:
+            self.lineEdit_b.setText(test_c)
+        # c
+        self.label_c = QLabel(' 버전  : ', self)
+        layout.addWidget(self.label_c)
+        self.lineEdit_c = QLineEdit(self)
+        layout.addWidget(self.lineEdit_c)
+        # ok
+        self.button = QPushButton('확인', self)
+        self.button.clicked.connect(self.accept)
+        layout.addWidget(self.button)
+        #
+        self.lineEdit_a.textChanged.connect(self.update_result)
+        self.lineEdit_b.textChanged.connect(self.update_result)
+        self.setLayout(layout)
+        self.update_result()
+
+    def update_result(self):
+        text1 = self.textA
+        text2 = self.lineEdit_a.text()
+        text3 = self.lineEdit_b.text()
+        #
+        self.lineEdit_c.setText(f'{text1}_v{text2}_w{text3}.mb')
+
+    def get_number(self):
+        return self.lineEdit_c.text()
 
 
 class AddTableItemShotDialog(QDialog):
@@ -46,7 +94,7 @@ class AddTableItemShotDialog(QDialog):
         self.sequenceComboBox.currentIndexChanged.connect(self.update_result)
         self.sequenceComboBox.setCurrentText(get_list[0])
         layout.addWidget(self.sequenceComboBox)
-        #a
+        # a
         self.label_a = QLabel('S000 샷넘버 3자리수 숫자 입력: (ex 999)', self)
         layout.addWidget(self.label_a)
         self.lineEdit_a = QLineEdit(self)
@@ -1249,7 +1297,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             action.triggered.connect(self.wip_right_file_open)
             menu.addAction(action)
 
-            action = QAction(" add version", self)
+            action = QAction(" copy  & +1 add version", self)
             action.triggered.connect(self.wip_right_add_version)
             menu.addAction(action)
             menu.addSeparator()
@@ -1304,6 +1352,23 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
     def wip_right_add_version(self):
         log.info(f'  wip right add version')
+        folder_path = self.wip_path_field.text()
+        items = self.wip_list_widget.selectedItems()
+        wip_path = items[0].text()
+        log.info(f"{wip_path.split('_v' ,1)}")
+        text_a = wip_path.split('_v',1)[0]
+        text_b = wip_path.split('_v',1)[1].split('_w',1)[0]
+        text_c = wip_path.split('_v', 1)[1].split('_w', 1)[1]
+        text_c = text_c.replace('.mb','')
+        text_c = f'{(int(text_c) + 1):02d}'
+        dialog = AddWipVersionDialog(text_a, text_b, text_c, self)
+        old_path = os.path.join(folder_path,wip_path)
+        if dialog.exec_():
+            num_str_list = dialog.get_number()
+            new_path = os.path.join(folder_path,num_str_list)
+            log.info(f' 복사합니다. :{old_path} -> {new_path}')
+            shutil.copy(old_path,new_path)
+            self.set_path_field(self.wip_list_widget, self.wip_path_field.text(), r"(.*?)_v(\d{3})_w(\d{2}).mb")
         pass
 
     def wip_right_file_open(self):
