@@ -1301,7 +1301,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             action.triggered.connect(self.wip_right_add_version)
             menu.addAction(action)
             menu.addSeparator()
-            action = QAction(" Upload PUB File  ", self)
+            action = QAction(" Selected -> Upload PUB File  ", self)
             action.triggered.connect(self.wip_right_pub_upload)
             menu.addAction(action)
         menu.exec_(self.wip_list_widget.mapToGlobal(position))
