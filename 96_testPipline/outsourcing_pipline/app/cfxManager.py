@@ -10,7 +10,51 @@ from maya.app.general import mayaMixin
 import pymel.core as pm
 import maya.cmds as cmds
 
+class AddWipVersionDialog(QDialog):
+    def __init__(self, text_a, test_b=None, test_c=None, parent=None):
+        super().__init__(parent)
+        self.textA = text_a
+        self.setWindowTitle('Wip Version Add')
+        self.setFixedSize(400, 300)
+        layout = QVBoxLayout()
+        # a
+        self.label_a = QLabel('v000 버전 추가 : (ex 999)', self)
+        layout.addWidget(self.label_a)
+        self.lineEdit_a = QLineEdit(self)
+        layout.addWidget(self.lineEdit_a)
+        if test_b:
+            self.lineEdit_a.setText(test_b)
+        # b
+        self.label_b = QLabel('w00 버전 추가 : (ex 99)', self)
+        layout.addWidget(self.label_b)
+        self.lineEdit_b = QLineEdit(self)
+        layout.addWidget(self.lineEdit_b)
+        if test_c:
+            self.lineEdit_b.setText(test_c)
+        # c
+        self.label_c = QLabel(' 버전  : ', self)
+        layout.addWidget(self.label_c)
+        self.lineEdit_c = QLineEdit(self)
+        layout.addWidget(self.lineEdit_c)
+        # ok
+        self.button = QPushButton('확인', self)
+        self.button.clicked.connect(self.accept)
+        layout.addWidget(self.button)
+        #
+        self.lineEdit_a.textChanged.connect(self.update_result)
+        self.lineEdit_b.textChanged.connect(self.update_result)
+        self.setLayout(layout)
+        self.update_result()
 
+    def update_result(self):
+        text1 = self.textA
+        text2 = self.lineEdit_a.text()
+        text3 = self.lineEdit_b.text()
+        #
+        self.lineEdit_c.setText(f'{text1}_v{text2}_w{text3}.mb')
+
+    def get_number(self):
+        return self.lineEdit_c.text()
 class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
     WINDOW_NAME = 'cfx_manager_window_a'
     OPTIONVAR_TASKMANAGER_A = 'optionvar_cfx_manager_a'
@@ -280,32 +324,200 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
     def searchDriveComboBox_change(self):
         print('dirve - searchDriveComboBox_change')
+        selected_item = self.searchDriveComboBox.currentText()
+        print(f' select drive : {selected_item}')
+        vfx_folder = os.path.join(selected_item, 'vfx')
+        if os.path.exists(vfx_folder):
+            subfolders = [f for f in os.listdir(vfx_folder) if os.path.isdir(os.path.join(vfx_folder, f))]
+            print(subfolders)
+            if subfolders:
+                self.searchProjectComboBox.clear()
+                self.searchProjectComboBox.addItem('-project-')
+                for i in subfolders:
+                    self.searchProjectComboBox.addItem(i)
         pass
 
     def searchProjectComboBox_change(self):
         print('project - searchProjectComboBox_change')
+        selected_drive_item = self.searchDriveComboBox.currentText()
+        selected_project_item = self.searchProjectComboBox.currentText()
+        print(f' select project : {selected_project_item}')
+        vfx_folder = os.path.join(selected_drive_item, 'vfx', selected_project_item, 'shot')
+        if os.path.exists(vfx_folder):
+            subfolders = [f for f in os.listdir(vfx_folder) if os.path.isdir(os.path.join(vfx_folder, f))]
+            print(subfolders)
+            if subfolders:
+                self.searchSequenceTypeComboBox.clear()
+                self.searchSequenceTypeComboBox.addItem('-sequence-')
+                for i in subfolders:
+                    self.searchSequenceTypeComboBox.addItem(i)
         pass
 
     def searchSequenceTypeComboBox_change(self):
         print('Sequence - searchSequenceTypeComboBox_change')
+        selected_drive_item = self.searchDriveComboBox.currentText()
+        selected_project_item = self.searchProjectComboBox.currentText()
+        selected_sequence_item = self.searchSequenceTypeComboBox.currentText()
+        print(f' select project : {selected_sequence_item}')
+        vfx_folder = os.path.join(selected_drive_item, 'vfx', selected_project_item, 'shot', selected_sequence_item)
+        if os.path.exists(vfx_folder):
+            subfolders = [f for f in os.listdir(vfx_folder) if os.path.isdir(os.path.join(vfx_folder, f))]
+            if subfolders:
+                self.searchTaskTypeComboBox.clear()
+                self.searchTaskTypeComboBox.addItem('- cut task -')
+                for i in subfolders:
+                    if os.path.exists(os.path.join(vfx_folder, i, 'ani')):
+                        self.searchTaskTypeComboBox.addItem(i)
         pass
 
     def searchTaskTypeComboBox_change(self):
         print('CutTask - searchTaskTypeComboBox_change')
+        wip_path = None
+        s_drive_i = self.searchDriveComboBox.currentText()
+        s_project_i = self.searchProjectComboBox.currentText()
+        s_sequence_i = self.searchSequenceTypeComboBox.currentText()
+        s_task_i = self.searchTaskTypeComboBox.currentText()
+        wip_path = os.path.join(s_drive_i, 'vfx', s_project_i, 'shot', s_sequence_i,
+                                s_task_i, 'cfx', 'wip', 'scenes')
+        wip_path = wip_path.replace(':/', ':\\')
+        self.wip_path_field.setText(wip_path)
+        self.wip_list_widget.clear()
+        self.set_path_field(self.wip_list_widget, wip_path, r"(.*?)_v(\d{3})_w(\d{2}).mb")
         pass
 
     def copy_path_to_clipboard_wip(self):
+        print('wip path copy - copy_path_to_clipboard_wip')
         pass
 
     def open_work_path_wip(self):
+        print('wip file path open - open_work_path_wip')
+        field_a = self.wip_path_field
+        path = field_a.text()
+        self.open_work_path_a(path)
         pass
 
-    def on_wip_list_double_clicked(self):
+    def on_wip_list_double_clicked(self, item):
+        wip_file_path = self.wip_path_field.text()
+        # wip_select_file = self.wip_list_widget.selected
+        print(f'{wip_file_path} {item.text()}')
+        file_name = os.path.join(wip_file_path, item.text())
+        if os.path.isfile(file_name):
+            cmds.file(file_name, force=True, open=True, prompt=False, ignoreVersion=True, type='mayaBinary')
         pass
 
-    def wip_show_context_menu(self):
+    def wip_show_context_menu(self, position):
+        print('mouse right button  - wip_show_context_menu')
+        # 오른쪽 메뉴 생성
+        menu = QMenu()
+        checkStart = False
+        if self.wip_list_widget.count() == 1:
+            item = self.wip_list_widget.item(0)
+            if item.text()[0] == 'N':
+                checkStart = True
+        elif self.wip_list_widget.count() == 0:
+            checkStart = True
+        else:
+            pass
+        if checkStart:
+            action = QAction(" Fist Working Environment Setup ", self)
+            action.triggered.connect(self.wip_right_fist_working_setup)
+            menu.addAction(action)
+            menu.addSeparator()
+
+        action = QAction(" wip copy folder path", self)
+        action.triggered.connect(self.wip_right_wip_copy_path)
+        menu.addAction(action)
+
+        action = QAction(" wip folder open", self)
+        action.triggered.connect(self.wip_right_open_folder)
+        menu.addAction(action)
+        menu.addSeparator()
+
+        if self.wip_list_widget.selectedItems():
+            action = QAction(" file open ", self)
+            action.triggered.connect(self.wip_right_file_open)
+            menu.addAction(action)
+
+            action = QAction(" copy  & +1 add version", self)
+            action.triggered.connect(self.wip_right_add_version)
+            menu.addAction(action)
+            menu.addSeparator()
+        menu.exec_(self.wip_list_widget.mapToGlobal(position))
         pass
 
+    def set_path_field(self, field_a, path_a, pattern_a):
+        # field and path and pattern 주면 맞는지 확인하고 리스트에 넣는다.
+        # wip_list_widget , pub_list_widget
+        if os.path.isdir(path_a):
+            items = os.listdir(path_a)
+            field_a.clear()
+            for item in items:
+                if re.match(pattern_a, item):
+                    log.info(f'{item}')
+                    add_item = QListWidgetItem(item)
+                    field_a.addItem(add_item)
+            if len(items) == 0:
+                add_item = QListWidgetItem('None Data')
+                field_a.addItem(add_item)
+        else:
+            field_a.clear()
+            add_item = QListWidgetItem('None Folder')
+            field_a.addItem(add_item)
+
+    def copy_path_to_clipboard_wip(self):
+        print(f' wip path field')
+        field_a = self.wip_path_field
+        path = field_a.text()
+        print(f'{path}')
+        self.copy_path_to_clipboard(path)
+
+    def copy_path_to_clipboard(self, text_a):
+        path = text_a
+        if path == '':
+            return
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        pyperclip.copy(path)
+
+    def open_work_path_a(self, text_a):
+        path = text_a
+        if os.path.isdir(path):
+            os.startfile(path)
+        else:
+            print(f' None Folder ')
+
+    def wip_right_wip_copy_path(self):
+        print(f'  wip folder path copy')
+        self.copy_path_to_clipboard_wip()
+
+    def wip_right_open_folder(self):
+        print(f' wip folder open')
+        self.open_work_path_wip()
+
+    def wip_right_file_open(self):
+        print(f' file open - wip right button')
+        self.file_open(self.wip_path_field,self.wip_list_widget)
+
+    def wip_right_add_version(self):
+        print(f'  wip right add version')
+        folder_path = self.wip_path_field.text()
+        items = self.wip_list_widget.selectedItems()
+        wip_path = items[0].text()
+        print(f"{wip_path.split('_v' ,1)}")
+        text_a = wip_path.split('_v',1)[0]
+        text_b = wip_path.split('_v',1)[1].split('_w',1)[0]
+        text_c = wip_path.split('_v', 1)[1].split('_w', 1)[1]
+        text_c = text_c.replace('.mb','')
+        text_c = f'{(int(text_c) + 1):02d}'
+        dialog = AddWipVersionDialog(text_a, text_b, text_c, self)
+        old_path = os.path.join(folder_path,wip_path)
+        if dialog.exec_():
+            num_str_list = dialog.get_number()
+            new_path = os.path.join(folder_path,num_str_list)
+            print(f' 복사합니다. :{old_path} -> {new_path}')
+            shutil.copy(old_path,new_path)
+            self.set_path_field(self.wip_list_widget, self.wip_path_field.text(), r"(.*?)_v(\d{3})_w(\d{2}).mb")
+        pass
 
 def show_window():
     global CFXManagerWindow
