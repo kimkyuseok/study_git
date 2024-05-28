@@ -2,13 +2,13 @@ import os
 import re
 import pyperclip
 import shutil
-# importlib.reload(outsourcing_pipline.log)
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 from maya.app.general import mayaMixin
 import pymel.core as pm
 import maya.cmds as cmds
+
 
 class AddWipVersionDialog(QDialog):
     def __init__(self, text_a, test_b=None, test_c=None, parent=None):
@@ -18,26 +18,26 @@ class AddWipVersionDialog(QDialog):
         self.setFixedSize(400, 300)
         layout = QVBoxLayout()
         # a
-        self.label_a = QLabel('v000 버전 추가 : (ex 999)', self)
+        self.label_a = QLabel('v000 version add : (ex 999)', self)
         layout.addWidget(self.label_a)
         self.lineEdit_a = QLineEdit(self)
         layout.addWidget(self.lineEdit_a)
         if test_b:
             self.lineEdit_a.setText(test_b)
         # b
-        self.label_b = QLabel('w00 버전 추가 : (ex 99)', self)
+        self.label_b = QLabel('w00 version add : (ex 99)', self)
         layout.addWidget(self.label_b)
         self.lineEdit_b = QLineEdit(self)
         layout.addWidget(self.lineEdit_b)
         if test_c:
             self.lineEdit_b.setText(test_c)
         # c
-        self.label_c = QLabel(' 버전  : ', self)
+        self.label_c = QLabel(' version  : ', self)
         layout.addWidget(self.label_c)
         self.lineEdit_c = QLineEdit(self)
         layout.addWidget(self.lineEdit_c)
         # ok
-        self.button = QPushButton('확인', self)
+        self.button = QPushButton('check', self)
         self.button.clicked.connect(self.accept)
         layout.addWidget(self.button)
         #
@@ -55,6 +55,8 @@ class AddWipVersionDialog(QDialog):
 
     def get_number(self):
         return self.lineEdit_c.text()
+
+
 class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
     WINDOW_NAME = 'cfx_manager_window_a'
     OPTIONVAR_TASKMANAGER_A = 'optionvar_cfx_manager_a'
@@ -199,7 +201,7 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         search_filter_layout.addWidget(self.searchTaskTypeComboBox)
 
         #####################
-        # 메인 레이아웃
+        # main layout
         #####################
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(20, 20, 20, 20)
@@ -207,7 +209,7 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         main_layout.setAlignment(Qt.AlignTop)
         window_layout.addLayout(main_layout)
         #####################
-        # 스플리터
+        # splitter
         #####################
         self.splitter = QSplitter()
         main_layout.addWidget(self.splitter)
@@ -247,15 +249,31 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         task_filter_widget_layout.addLayout(task_top_layout)
         task_top_layout.setContentsMargins(0, 0, 0, 0)
         task_top_layout.setSpacing(5)
-        cache_export_save_find_button = QPushButton(' File SAVE (and) Yetti FIND ')
-        task_top_layout.addWidget(cache_export_save_find_button)
-        task_top_layout.addItem(QSpacerItem(5, 0))
-
         cache_exprot_label = QLabel('CFX Cache EXPORT')
         cache_exprot_label.setStyleSheet('font-size: 10pt;')
         task_top_layout.addWidget(cache_exprot_label)
         task_top_layout.addItem(QSpacerItem(5, 0))
-
+        #################################################
+        cfx_export_widget = QWidget()
+        cfx_export_layout = QVBoxLayout(cfx_export_widget)
+        cfx_export_layout.setContentsMargins(0, 0, 0, 0)
+        cfx_export_layout.setSpacing(5)
+        task_top_layout.addWidget(cfx_export_widget)
+        self.cfx_export_scroll = QScrollArea(cfx_export_widget)
+        self.cfx_export_scroll.setWidget(QWidget())
+        self.cfx_export_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.cfx_export_scroll.setFrameShape(QScrollArea.Box)
+        self.cfx_export_scroll.setFrameShadow(QScrollArea.Sunken)
+        self.cfx_export_scroll.setWidgetResizable(True)
+        self.cfx_export_scroll_layout = QVBoxLayout(self.cfx_export_scroll.widget())
+        self.cfx_export_scroll_layout.setAlignment(Qt.AlignTop)
+        self.cfx_export_scroll_layout.setSpacing(0)
+        self.save_yeti_find_btn = QPushButton('file save (and) yetti find')
+        # self.save_yeti_find_btn.clicked.connect(self.import_btn_connect)
+        self.save_yeti_find_btn.setFixedHeight(40)
+        cfx_export_layout.addWidget(self.save_yeti_find_btn)
+        cfx_export_layout.addWidget(self.cfx_export_scroll)
+        ##################################################
         cache_exprt_button_layout = QHBoxLayout()
         task_top_layout.addLayout(cache_exprt_button_layout)
         cache_exprt_button_layout.setContentsMargins(0, 0, 0, 0)
@@ -266,8 +284,6 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         #
         cache_open_folder_button = QPushButton(' Yetti Cache Folder OPEN ')
         cache_exprt_button_layout.addWidget(cache_open_folder_button)
-
-
         ##################################################
         # mid work
         ##################################################
@@ -280,10 +296,53 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         AniCache_label.setStyleSheet('font-size: 10pt;')
         layout.addWidget(AniCache_label)
         layout.addItem(QSpacerItem(5, 0))
+
+        #################################################
+        ani_cache_widget = QWidget()
+        ani_cache_layout = QVBoxLayout(ani_cache_widget)
+        ani_cache_layout.setContentsMargins(0, 0, 0, 0)
+        ani_cache_layout.setSpacing(5)
+        layout.addWidget(ani_cache_widget)
+        self.ani_cache_scroll = QScrollArea(ani_cache_widget)
+        self.ani_cache_scroll.setWidget(QWidget())
+        self.ani_cache_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.ani_cache_scroll.setFrameShape(QScrollArea.Box)
+        self.ani_cache_scroll.setFrameShadow(QScrollArea.Sunken)
+        self.ani_cache_scroll.setWidgetResizable(True)
+        self.ani_cache_scroll_layout = QVBoxLayout(self.ani_cache_scroll.widget())
+        self.ani_cache_scroll_layout.setAlignment(Qt.AlignTop)
+        self.ani_cache_scroll_layout.setSpacing(0)
+        self.get_ani_cache_btn = QPushButton('get animation cache')
+        self.get_ani_cache_btn.clicked.connect(self.get_ani_cache_btn_run)
+        self.get_ani_cache_btn.setFixedHeight(40)
+        ani_cache_layout.addWidget(self.get_ani_cache_btn)
+        ani_cache_layout.addWidget(self.ani_cache_scroll)
+        #################################################
         cfx_label = QLabel('CFX SET IMPORT')
         cfx_label.setStyleSheet('font-size: 10pt;')
         layout.addWidget(cfx_label)
         layout.addItem(QSpacerItem(5, 0))
+        #################################################
+        cfx_setting_widget = QWidget()
+        cfx_setting_layout = QVBoxLayout(cfx_setting_widget)
+        cfx_setting_layout.setContentsMargins(0, 0, 0, 0)
+        cfx_setting_layout.setSpacing(5)
+        layout.addWidget(cfx_setting_widget)
+        self.cfx_setting_scroll = QScrollArea(cfx_setting_widget)
+        self.cfx_setting_scroll.setWidget(QWidget())
+        self.cfx_setting_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.cfx_setting_scroll.setFrameShape(QScrollArea.Box)
+        self.cfx_setting_scroll.setFrameShadow(QScrollArea.Sunken)
+        self.cfx_setting_scroll.setWidgetResizable(True)
+        self.cfx_setting_scroll_layout = QVBoxLayout(self.cfx_setting_scroll.widget())
+        self.cfx_setting_scroll_layout.setAlignment(Qt.AlignTop)
+        self.cfx_setting_scroll_layout.setSpacing(0)
+        # self.get_cfx_setting_btn = QPushButton('')
+        # self.get_cfx_setting_btn.clicked.connect(self.import_btn_connect)
+        # self.get_cfx_setting_btn.setFixedHeight(40)
+        # cfx_setting_layout.addWidget(self.get_cfx_setting_btn)
+        cfx_setting_layout.addWidget(self.cfx_setting_scroll)
+
 
         ##################################################
         # wip work
@@ -407,7 +466,7 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
     def wip_show_context_menu(self, position):
         print('mouse right button  - wip_show_context_menu')
-        # 오른쪽 메뉴 생성
+        # right menu
         menu = QMenu()
         checkStart = False
         if self.wip_list_widget.count() == 1:
@@ -446,14 +505,14 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         pass
 
     def set_path_field(self, field_a, path_a, pattern_a):
-        # field and path and pattern 주면 맞는지 확인하고 리스트에 넣는다.
+        # field and path and pattern
         # wip_list_widget , pub_list_widget
         if os.path.isdir(path_a):
             items = os.listdir(path_a)
             field_a.clear()
             for item in items:
                 if re.match(pattern_a, item):
-                    log.info(f'{item}')
+                    print(f'{item}')
                     add_item = QListWidgetItem(item)
                     field_a.addItem(add_item)
             if len(items) == 0:
@@ -514,10 +573,147 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         if dialog.exec_():
             num_str_list = dialog.get_number()
             new_path = os.path.join(folder_path,num_str_list)
-            print(f' 복사합니다. :{old_path} -> {new_path}')
+            print(f' copy . :{old_path} -> {new_path}')
             shutil.copy(old_path,new_path)
             self.set_path_field(self.wip_list_widget, self.wip_path_field.text(), r"(.*?)_v(\d{3})_w(\d{2}).mb")
         pass
+    def get_ani_cache_btn_run(self):
+        print(' get element ')
+        s_drive_i = self.searchDriveComboBox.currentText()
+        s_project_i = self.searchProjectComboBox.currentText()
+        s_sequence_i = self.searchSequenceTypeComboBox.currentText()
+        s_task_i = self.searchTaskTypeComboBox.currentText()
+        main_path = os.path.join(s_drive_i, 'vfx', s_project_i, 'shot', s_sequence_i, s_task_i)
+        mm_cam_path = os.path.join(main_path, 'mm', 'pub', 'cam', 'versions')
+        if os.path.exists(mm_cam_path):
+            items = os.listdir(mm_cam_path)
+            pattern = re.compile(r"(.*?)_v(\d{3}).abc")
+            highest_v = -1
+            highest_file = None
+            versions = []
+            for i in os.listdir(mm_cam_path):
+                mach = pattern.match(i)
+                if mach:
+                    versions.append(i)
+                    version = int(mach.group(2))
+                    if version > highest_v:
+                        highest_v = version
+                        highest_file = i
+            print(highest_file)
+            add_item = CFX_ImportWidget('cam', mm_cam_path, versions, highest_file, parent=self)
+            self.ani_cache_scroll_layout.addWidget(add_item)
+        ani_pub_cache_abc_path = os.path.join(main_path, 'ani', 'pub', 'cache', 'abc', 'versions')
+        if os.path.exists(ani_pub_cache_abc_path):
+            pattern = re.compile(r"(.*?)_v(\d{3}).abc")
+            dic_ani_versions = {}
+            dic_ani_versions_h = {}
+            for i in os.listdir(ani_pub_cache_abc_path):
+                mach = pattern.match(i)
+                if mach.group(1) not in dic_ani_versions:
+                    dic_ani_versions[mach.group(1)] = []
+                if mach:
+                    dic_ani_versions[mach.group(1)].append(i)
+            for i in dic_ani_versions:
+                highest_v = -1
+                highest_file = None
+                for j in dic_ani_versions[i]:
+                    mach = pattern.match(j)
+                    if mach:
+                        version = int(mach.group(2))
+                        if version > highest_v:
+                            highest_v = version
+                            highest_file = j
+                dic_ani_versions_h[i] = highest_file
+            for i in dic_ani_versions:
+                add_item = CFX_ImportWidget(i, ani_pub_cache_abc_path,
+                                            dic_ani_versions[i], dic_ani_versions_h[i], parent=self)
+                self.ani_cache_scroll_layout.addWidget(add_item)
+            for i in dic_ani_versions:
+                if i.find('__')!=-1:
+                    split_a = i.split('__')
+                    if split_a[0] == 'character':
+                        folder_path = os.path.join(s_drive_i, 'vfx', s_project_i, 'asset', 'character',
+                                                  split_a[2], 'cfx', 'pub', 'data')
+                        asset_path = os.path.join(folder_path, 'yeti_cfx_grp.mb')
+                        if os.path.exists(asset_path):
+                            add_item = CFX_ImportWidget(f'cfx Set:{split_a[2]}', folder_path,
+                                                        ['yeti_cfx_grp.mb'], 'yeti_cfx_grp.mb', parent=self)
+                            self.cfx_setting_scroll_layout.addWidget(add_item)
+
+        pass
+
+
+class CFX_ImportWidget(QWidget):
+
+    LABEL_COMMON_HEIGHT = 25
+
+    def __init__(self, asset, main_path, versions, current, parent=None):
+        super().__init__(parent)
+        self.asset = asset
+        self.main_path = main_path
+        self.versions = versions
+        self.current = current
+        self.parent = parent
+        self.ui()
+
+    def ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        display_name = self.asset
+        self.asset_code_label = QLabel(display_name)
+        main_layout.addWidget(self.asset_code_label)
+
+        self.version_combobox = QComboBox()
+        self.version_combobox.addItem("-versions-")
+        for i in self.versions:
+            self.version_combobox.addItem(i)
+        self.version_combobox.setCurrentText(self.current)
+        main_layout.addWidget(self.version_combobox)
+
+        sub_layout = QHBoxLayout()
+        main_layout.addLayout(sub_layout)
+        self.open_folder_button = QPushButton('Open Folder')
+        self.open_folder_button.clicked.connect(self.open_folder)
+        sub_layout.addWidget(self.open_folder_button)
+
+        self.import_file_button = QPushButton('GET')
+        self.import_file_button.clicked.connect(self.get_file)
+        sub_layout.addWidget(self.import_file_button)
+
+    def open_folder(self):
+        path = self.main_path
+        if os.path.isdir(path):
+            os.startfile(path)
+        else:
+            print(f' None Folder ')
+
+    def get_file(self):
+        path = self.main_path
+        filename = self.version_combobox.currentText()
+        file_path = os.path.join(path,filename)
+        if self.asset.find('__') != -1:
+            split_a = self.asset.split('__')
+            if split_a[0] == 'character':
+                cmds.file(file_path, i=True, namespace=split_a[1])
+        elif self.asset.find('cfx Set:') != -1:
+            split_a = self.asset.split(':')
+            if split_a[0] == 'cfx Set':
+                print('cfx Set')
+                cmds.file(file_path, i=True)
+                dic_blendshape = {'crow': ['crowBody', 'crowBody_scalp_mesh']}
+                if split_a[1] in dic_blendshape:
+                    chache_bs = cmds.ls(f'*:{dic_blendshape[split_a[1]][0]}', type='transform')
+                    if len(chache_bs) == 1:
+                        bs_node = cmds.blendShape(chache_bs[0], dic_blendshape[split_a[1]][1], name='cfx_bs')[0]
+                        cmds.setAttr(bs_node + '.' + dic_blendshape[split_a[1]][0], 1)
+                        cmds.parent('cfx',chache_bs[0].split(':',1)[0]+':geo')
+
+        elif os.path.exists(file_path):
+            cmds.file(file_path, i=True)
+        else:
+            pass
+
 
 def show_window():
     global CFXManagerWindow
