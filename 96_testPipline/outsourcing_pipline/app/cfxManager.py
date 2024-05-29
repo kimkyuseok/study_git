@@ -269,21 +269,11 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.cfx_export_scroll_layout.setAlignment(Qt.AlignTop)
         self.cfx_export_scroll_layout.setSpacing(0)
         self.save_yeti_find_btn = QPushButton('file save (and) yetti find')
-        # self.save_yeti_find_btn.clicked.connect(self.import_btn_connect)
+        self.save_yeti_find_btn.clicked.connect(self.filesave_yettifind)
         self.save_yeti_find_btn.setFixedHeight(40)
         cfx_export_layout.addWidget(self.save_yeti_find_btn)
         cfx_export_layout.addWidget(self.cfx_export_scroll)
-        ##################################################
-        cache_exprt_button_layout = QHBoxLayout()
-        task_top_layout.addLayout(cache_exprt_button_layout)
-        cache_exprt_button_layout.setContentsMargins(0, 0, 0, 0)
-        cache_exprt_button_layout.setSpacing(5)
-        #
-        cache_export_button = QPushButton(' Yetti Cache Export START ')
-        cache_exprt_button_layout.addWidget(cache_export_button)
-        #
-        cache_open_folder_button = QPushButton(' Yetti Cache Folder OPEN ')
-        cache_exprt_button_layout.addWidget(cache_open_folder_button)
+
         ##################################################
         # mid work
         ##################################################
@@ -579,6 +569,8 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         pass
     def get_ani_cache_btn_run(self):
         print(' get element ')
+        self.list_layout_item_remove(self.ani_cache_scroll_layout)
+        self.list_layout_item_remove(self.cfx_setting_scroll_layout)
         s_drive_i = self.searchDriveComboBox.currentText()
         s_project_i = self.searchProjectComboBox.currentText()
         s_sequence_i = self.searchSequenceTypeComboBox.currentText()
@@ -640,13 +632,89 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                                                         ['yeti_cfx_grp.mb'], 'yeti_cfx_grp.mb', parent=self)
                             self.cfx_setting_scroll_layout.addWidget(add_item)
 
-        pass
+    def filesave_yettifind(self):
+        s_drive_i = self.searchDriveComboBox.currentText()
+        s_project_i = self.searchProjectComboBox.currentText()
+        s_sequence_i = self.searchSequenceTypeComboBox.currentText()
+        s_task_i = self.searchTaskTypeComboBox.currentText()
+        main_path = os.path.join(s_drive_i, 'vfx', s_project_i, 'shot', s_sequence_i, s_task_i)
+        cfx_path = os.path.join(main_path, 'cfx', 'pub', 'cache', 'yeti')
+        yeti_shape = pm.ls(type='pgYetiMaya')
+        pattern = re.compile(r"(.*?)__v(\d{3})")
+        for i in yeti_shape:
+            new_path = ''
+
+            yeti_node = pm.PyNode(i).getParent()
+            file_name = f'{yeti_node.name()}.%04d.fur'
+            print(cfx_path)
+            if os.path.exists(cfx_path):
+                #print (cfx_path)
+                for i in os.listdir(cfx_path):
+                    mach = pattern.match(i)
+                    if mach:
+                        print(mach.group(1),int(mach.group(2)))
+                        new_path = os.path.join(cfx_path,
+                                                f"{mach.group(1).split('__')[0]}__cfx__{int(mach.group(2))+1:03d}",
+                                                yeti_node.name())
+                    else:
+                        new_path = os.path.join(cfx_path,
+                                                f"{mach.group(1).split('__')[0]}__cfx__{1:03d}",
+                                                yeti_node.name())
+            print(new_path)
+            print(file_name)
+            add_item = CFX_ExportWidget(yeti_node.name(), new_path, file_name, parent=self)
+            self.cfx_export_scroll_layout.addWidget(add_item)
+
+    def list_layout_item_remove(self,list_layout_a):
+        countlayoutitem = list_layout_a.count()
+        #print(countlayoutitem)
+        for i in reversed(range(countlayoutitem)):
+            item = list_layout_a.itemAt(i)
+            if isinstance(item, QSpacerItem):
+                list_layout_a.removeItem(item)
+            elif item.widget() is not None:
+                widget = item.widget()
+                list_layout_a.removeWidget(widget)
+                widget.deleteLater()
+
+
+class CFX_ExportWidget(QWidget):
+    def __init__(self, asset, main_path, file_name, parent=None):
+        super().__init__(parent)
+        self.asset = asset
+        self.main_path = main_path
+        self.file_name = file_name
+        self.parent = parent
+        self.ui()
+
+    def ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        display_name = self.asset
+        self.asset_code_label = QLabel(display_name)
+        main_layout.addWidget(self.asset_code_label)
+        self.cache_file_path = QLineEdit()
+        self.cache_file_path.setText(self.main_path)
+        main_layout.addWidget(self.cache_file_path)
+        self.cache_file_name = QLineEdit()
+        self.cache_file_name.setText(self.file_name)
+        main_layout.addWidget(self.cache_file_name)
+        ##################################################
+        cache_exprt_button_layout = QHBoxLayout()
+        main_layout.addLayout(cache_exprt_button_layout)
+        cache_exprt_button_layout.setContentsMargins(0, 0, 0, 0)
+        cache_exprt_button_layout.setSpacing(5)
+        #
+        cache_open_folder_button = QPushButton(' OPEN Folder')
+        cache_exprt_button_layout.addWidget(cache_open_folder_button)
+        #
+        cache_export_button = QPushButton(' Yetti Cache Export START ')
+        cache_exprt_button_layout.addWidget(cache_export_button)
+
 
 
 class CFX_ImportWidget(QWidget):
-
-    LABEL_COMMON_HEIGHT = 25
-
     def __init__(self, asset, main_path, versions, current, parent=None):
         super().__init__(parent)
         self.asset = asset
