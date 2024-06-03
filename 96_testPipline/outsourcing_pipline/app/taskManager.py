@@ -1061,7 +1061,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 task_path = os.path.join(shot_path, task_item.text())
                 log.info(f' get table item D {task_path}')
                 wip_path = os.path.join(task_path, 'wip', 'scenes')
-                pub_path = os.path.join(task_path, 'pub', 'scenes')
+                pub_path = os.path.join(task_path, 'pub', 'scenes', 'versions')
                 log.info(f' get table item E {wip_path}')
                 # 룩뎁은 테스크가 여러개일수 있음 ex default_shd  , default_grm 등등.
                 if wip_path.find(':/') != -1:
@@ -1070,6 +1070,12 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                     pub_path = pub_path.replace('/', '\\')
                 self.wip_path_field.setText(wip_path)
                 self.pub_path_field.setText(pub_path)
+                self.wip_list_widget.clear()
+                self.pub_list_widget.clear()
+                self.set_path_field(self.wip_list_widget, wip_path, r"(.*?)_v(\d{3})_w(\d{2}).mb")
+                self.set_path_field(self.pub_list_widget, pub_path, r"(.*?).mb")
+
+
             else:
                 pass
 
@@ -1078,7 +1084,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         # wip_list_widget , pub_list_widget
         if os.path.isdir(path_a):
             items = os.listdir(path_a)
-            field_a.clear()
+            #field_a.clear()
             for item in items:
                 if re.match(pattern_a, item):
                     log.info(f'{item}')
@@ -1338,8 +1344,63 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
     def create_directoryi(self,path):
         if not os.path.exists(path):
             os.makedirs(path)
+
     def wip_right_pub_upload(self):
         log.info(f' wip file upload PUB')
+        pub_folder_path = self.pub_path_field.text()
+        wip_folder_path = self.wip_path_field.text()
+        wip_item_text = self.wip_list_widget.selectedItems()[0].text()
+        old_wip_path = os.path.join(wip_folder_path,wip_item_text)
+        count_a = self.pub_list_widget.count()
+        if count_a != 0:
+            if count_a == 1:
+                pub_items = self.pub_list_widget.item(0)
+                pub_item_text = pub_items.text()
+                if pub_item_text in ['None Data','None Folder']:
+                    pattern_a = r"(.*?)_v(\d{3})_w(\d{2}).mb"
+                    match = re.match(pattern_a, wip_item_text)
+                    if match:
+                        new_pub_file = f'{match.group(1)}_v001.mb'
+                        new_pub_path = os.path.join(pub_folder_path, new_pub_file)
+                        log.info(f' PUB path :{old_wip_path} -> {new_pub_path}')
+                        self.create_directoryi(pub_folder_path)
+                        shutil.copy(old_wip_path, new_pub_path)
+                        self.pub_list_widget.clear()
+                        self.set_path_field(self.pub_list_widget, pub_folder_path, r"(.*?)_v(\d{3}).mb")
+                else:
+                    v_a = -1
+                    pattern_a = r"(.*?)_v(\d{3}).mb"
+                    for i in range(count_a):
+                        pub_items = self.pub_list_widget.item(i)
+                        pub_item_text = pub_items.text()
+                        match = re.match(pattern_a, pub_item_text)
+                        if match:
+                            if int(match.group(2)) > v_a:
+                                v_a = int(match.group(2)) + 1
+                        pub_item_text = f'{match.group(1)}_v{v_a:03d}.mb'
+                        new_pub_path = os.path.join(pub_folder_path, pub_item_text)
+                        log.info(f' PUB path :{old_wip_path} -> {new_pub_path}')
+                        shutil.copy(old_wip_path, new_pub_path)
+                        self.pub_list_widget.clear()
+                        self.set_path_field(self.pub_list_widget, pub_folder_path, r"(.*?)_v(\d{3}).mb")
+            else:
+                v_a = -1
+                pattern_a = r"(.*?)_v(\d{3}).mb"
+                for i in range(count_a):
+                    pub_items = self.pub_list_widget.item(i)
+                    pub_item_text = pub_items.text()
+                    match = re.match(pattern_a, pub_item_text)
+                    if match:
+                        if int(match.group(2)) > v_a:
+                            v_a = int(match.group(2))+1
+                    pub_item_text = f'{match.group(1)}_v{v_a:03d}.mb'
+                    new_pub_path = os.path.join(pub_folder_path, pub_item_text)
+                    log.info(f' PUB path :{old_wip_path} -> {new_pub_path}')
+                    shutil.copy(old_wip_path, new_pub_path)
+                    self.pub_list_widget.clear()
+                    self.set_path_field(self.pub_list_widget, pub_folder_path, r"(.*?)_v(\d{3}).mb")
+
+
         pass
 
     def wip_right_open_folder(self):
@@ -1368,6 +1429,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             new_path = os.path.join(folder_path,num_str_list)
             log.info(f' 복사합니다. :{old_path} -> {new_path}')
             shutil.copy(old_path,new_path)
+            self.wip_list_widget.clear()
             self.set_path_field(self.wip_list_widget, self.wip_path_field.text(), r"(.*?)_v(\d{3})_w(\d{2}).mb")
         pass
 
