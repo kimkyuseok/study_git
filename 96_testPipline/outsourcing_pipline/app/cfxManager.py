@@ -494,6 +494,28 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         menu.exec_(self.wip_list_widget.mapToGlobal(position))
         pass
 
+    def create_empty_file(self, directroy, filename):
+        if not os.path.exists(directroy):
+            os.makedirs(directroy)
+        file_path = os.path.join(directroy, filename)
+        with open(file_path,'w') as file:
+            pass
+
+    def create_directoryi(self,path):
+        print(path)
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+    def wip_right_fist_working_setup(self):
+        print(f' 최초작업시작 cfx')
+        s_task_i = self.searchTaskTypeComboBox.currentText()
+        get_wip_path = self.wip_path_field.text()
+        self.create_directoryi(get_wip_path)
+        new_file_name = f'{s_task_i}_cfx_v001_w01.mb'
+        self.create_empty_file(get_wip_path,new_file_name)
+        self.set_path_field(self.wip_list_widget, get_wip_path, r"(.*?)_v(\d{3})_w(\d{2}).mb")
+        # 파일열지 물어보기?
+
     def set_path_field(self, field_a, path_a, pattern_a):
         # field and path and pattern
         # wip_list_widget , pub_list_widget
@@ -633,12 +655,14 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                             self.cfx_setting_scroll_layout.addWidget(add_item)
 
     def filesave_yettifind(self):
+        self.list_layout_item_remove(self.cfx_export_scroll_layout)
         s_drive_i = self.searchDriveComboBox.currentText()
         s_project_i = self.searchProjectComboBox.currentText()
         s_sequence_i = self.searchSequenceTypeComboBox.currentText()
         s_task_i = self.searchTaskTypeComboBox.currentText()
         main_path = os.path.join(s_drive_i, 'vfx', s_project_i, 'shot', s_sequence_i, s_task_i)
         cfx_path = os.path.join(main_path, 'cfx', 'pub', 'cache', 'yeti')
+        self.create_directoryi(cfx_path)
         yeti_shape = pm.ls(type='pgYetiMaya')
         pattern = re.compile(r"(.*?)__v(\d{3})")
         for i in yeti_shape:
@@ -646,24 +670,41 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
             yeti_node = pm.PyNode(i).getParent()
             file_name = f'{yeti_node.name()}.%04d.fur'
-            print(cfx_path)
+            ch_name = yeti_node.name().rsplit('_',2)[0]
+            print('yeti shape')
             if os.path.exists(cfx_path):
-                #print (cfx_path)
+                print(f'yeti path {cfx_path}')
                 for i in os.listdir(cfx_path):
                     mach = pattern.match(i)
                     if mach:
                         print(mach.group(1),int(mach.group(2)))
                         new_path = os.path.join(cfx_path,
-                                                f"{mach.group(1).split('__')[0]}__cfx__{int(mach.group(2))+1:03d}",
+                                                f"{mach.group(1).split('__')[0]}__cfx__v{int(mach.group(2))+1:03d}",
                                                 yeti_node.name())
                     else:
                         new_path = os.path.join(cfx_path,
-                                                f"{mach.group(1).split('__')[0]}__cfx__{1:03d}",
+                                                f"{mach.group(1).split('__')[0]}__cfx__v{1:03d}",
                                                 yeti_node.name())
-            print(new_path)
-            print(file_name)
-            add_item = CFX_ExportWidget(yeti_node.name(), new_path, file_name, parent=self)
-            self.cfx_export_scroll_layout.addWidget(add_item)
+            if len(os.listdir(cfx_path)) == 0:
+                new_path = os.path.join(cfx_path,
+                                        f"{ch_name}__cfx__v{1:03d}",
+                                        yeti_node.name())
+            print(f'test :  {new_path}')
+            if new_path != '':
+                print(file_name)
+                #self.create_directoryi(new_path)
+                add_item = CFX_ExportWidget(yeti_node.name(), new_path, file_name, parent=self)
+                self.cfx_export_scroll_layout.addWidget(add_item)
+
+    def file_open(self, ptah_field, list_widget):
+        # wip 과 pub 아이템( 씬 ) 파일 열기
+        file_path = ptah_field.text()
+        select_file = list_widget.selectedItems()
+        file_name = os.path.join(file_path, select_file[0].text())
+        # 바로 오픈하지 않고 열겠습니까? 필요해보임
+        if os.path.isfile(file_name):
+            cmds.file(file_name, force=True, open=True, prompt=False, ignoreVersion=True, type='mayaBinary')
+
 
     def list_layout_item_remove(self,list_layout_a):
         countlayoutitem = list_layout_a.count()
@@ -708,9 +749,40 @@ class CFX_ExportWidget(QWidget):
         #
         cache_open_folder_button = QPushButton(' OPEN Folder')
         cache_exprt_button_layout.addWidget(cache_open_folder_button)
+        cache_open_folder_button.clicked.connect(self.open_folder)
         #
         cache_export_button = QPushButton(' Yetti Cache Export START ')
         cache_exprt_button_layout.addWidget(cache_export_button)
+        cache_export_button.clicked.connect(self.cache_export_button_run)
+
+    def open_folder(self):
+        path = self.main_path
+        if os.path.isdir(path):
+            os.startfile(path)
+        else:
+            print(f' None Folder ')
+            if os.path.isdir(path.split('yeti')[0]+'yeti'):
+                os.startfile(path.split('yeti')[0]+'yeti')
+
+    def cache_export_button_run(self):
+        start_frame = cmds.playbackOptions(q=True, min=True)
+        end_frame = cmds.playbackOptions(q=True, max=True)
+        file_path = self.cache_file_path.text()
+        if os.path.exists(file_path):
+            pass
+        else:
+            os.makedirs(file_path)
+        file_name = self.cache_file_name.text()
+        full_path = os.path.join(file_path,file_name)
+        full_path = full_path.replace('\\','/')
+        yeti_node = self.asset
+        cmd = (f'pgYetiCommand -writeCache "{full_path}" -range {start_frame} {end_frame} '
+               f'-samples 3 -updateViewport false  -generatePreview false {yeti_node}')
+        print(cmd)
+        pm.mel.eval(cmd)
+        rename_a = cmds.file(q=True, sceneName=1)
+        cmds.file(rename=rename_a)
+        cmds.file(save=True, type='mayaBinary')
 
 
 
@@ -769,7 +841,8 @@ class CFX_ImportWidget(QWidget):
             if split_a[0] == 'cfx Set':
                 print('cfx Set')
                 cmds.file(file_path, i=True)
-                dic_blendshape = {'crow': ['crowBody', 'crowBody_scalp_mesh']}
+                dic_blendshape = {'crow': ['crowBody', 'crowBody_scalp_mesh'],
+                                  'rat': ['rat_body_mesh', 'rat_body_scalp_mesh']}
                 if split_a[1] in dic_blendshape:
                     chache_bs = cmds.ls(f'*:{dic_blendshape[split_a[1]][0]}', type='transform')
                     if len(chache_bs) == 1:
@@ -794,3 +867,4 @@ def show_window():
 
     cfxmanagerwin = CFXManagerWindow()
     cfxmanagerwin.show()
+show_window()
