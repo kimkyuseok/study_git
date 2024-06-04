@@ -744,7 +744,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             self.asset_type_filter_grp.setVisible(True)
             self.sequence_filter_grp.setVisible(False)
             # check
-            self.cb_rig.setChecked(True)
+            # self.cb_rig.setChecked(True)
         elif sel == 1:
             self.cb_mod.setVisible(False)
             self.cb_lkd.setVisible(False)
@@ -757,7 +757,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             self.asset_type_filter_grp.setVisible(False)
             self.sequence_filter_grp.setVisible(True)
             # check
-            self.cb_ani.setChecked(True)
+            # self.cb_ani.setChecked(True)
         else:
             self.cb_mod.setVisible(True)
             self.cb_lkd.setVisible(True)
@@ -1033,7 +1033,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                     pub_path = os.path.join(task_path, 'pub', 'scenes', 'versions')
                 elif task_item.text() in ['lit', 'fx']:
                     wip_path = os.path.join(task_path, 'wip', 'maya', 'scenes')
-                    pub_path = os.path.join(task_path, 'pub', 'maya', 'scenes')
+                    pub_path = os.path.join(task_path, 'pub', 'maya', 'scenes', 'versions')
                 else:
                     pass
                 log.info(f' get table item E {wip_path} {pub_path}')
@@ -1072,8 +1072,13 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 self.pub_path_field.setText(pub_path)
                 self.wip_list_widget.clear()
                 self.pub_list_widget.clear()
-                self.set_path_field(self.wip_list_widget, wip_path, r"(.*?)_v(\d{3})_w(\d{2}).mb")
-                self.set_path_field(self.pub_list_widget, pub_path, r"(.*?).mb")
+                if task_item.text() in ['lkd']:
+                    self.set_path_field(self.wip_list_widget, wip_path, r"(.*?)_v(\d{3})_w(\d{2}).mb")
+                    # self.set_path_field(self.wip_list_widget, wip_path, r"(.*?)_shd_v(\d{3})_w(\d{2}).mb")
+                    self.set_path_field(self.pub_list_widget, pub_path, r"(.*?).mb")
+                else:
+                    self.set_path_field(self.wip_list_widget, wip_path, r"(.*?)_v(\d{3})_w(\d{2}).mb")
+                    self.set_path_field(self.pub_list_widget, pub_path, r"(.*?).mb")
 
 
             else:
@@ -1117,6 +1122,7 @@ class TaskManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         asset_table_item = []
         for i in get_dic['asset']:
             asset_a = os.path.join(main_entity_path, i)
+            self.create_directoryi(asset_a)
             log.info(f'asset path {asset_a}')
             for j in self.get_asst_code(asset_a):
                 log.info(f'어셋 타입 및 코드 이름  {i} {j}')
