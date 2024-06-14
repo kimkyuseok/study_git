@@ -261,9 +261,32 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         right_script_layout.addItem(QSpacerItem(5, 0))
 
     def searchDriveComboBox_change(self):
+        print('dirve - searchDriveComboBox_change')
+        selected_item = self.searchDriveComboBox.currentText()
+        print(f' select drive : {selected_item}')
+        vfx_folder = os.path.join(selected_item, 'vfx')
+        if os.path.exists(vfx_folder):
+            subfolders = [f for f in os.listdir(vfx_folder) if os.path.isdir(os.path.join(vfx_folder, f))]
+            print(subfolders)
+            if subfolders:
+                self.searchProjectComboBox.clear()
+                self.searchProjectComboBox.addItem('-project-')
+                for i in subfolders:
+                    self.searchProjectComboBox.addItem(i)
         pass
     def searchProjectComboBox_change(self):
-        pass
+        print('project - searchProjectComboBox_change')
+        selected_drive_item = self.searchDriveComboBox.currentText()
+        selected_project_item = self.searchProjectComboBox.currentText()
+        print(f' select project : {selected_project_item}')
+        vfx_folder = os.path.join(selected_drive_item, 'vfx', selected_project_item, 'asset')
+        if os.path.exists(vfx_folder):
+            subfolders = ['character', 'prop', 'vehicle', 'env', 'crowd', 'location', 'fx']
+            if subfolders:
+                self.searchAssetTypeComboBox.clear()
+                self.searchAssetTypeComboBox.addItem('-AssetType-')
+                for i in subfolders:
+                    self.searchAssetTypeComboBox.addItem(i)
     def searchAssetTypeComboBox_change(self):
         pass
     def copy_path_to_clipboard_wip(self):
