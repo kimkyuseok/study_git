@@ -288,7 +288,48 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 for i in subfolders:
                     self.searchAssetTypeComboBox.addItem(i)
     def searchAssetTypeComboBox_change(self):
-        pass
+        # 변경이되면 rig task에 프린트한다.
+        # 현재 상태 프린트
+        searchDrive_item = self.searchDriveComboBox.currentText()
+        searchProject_item = self.searchProjectComboBox.currentText()
+        searchAsset_item = self.searchAssetTypeComboBox.currentText()
+        if searchAsset_item not in ['-AssetType-', '']:
+            asset_path = os.path.join(searchDrive_item, 'vfx', searchProject_item, 'asset', searchAsset_item)
+            # print(searchDrive_item, searchProject_item, searchAsset_item)
+            # print(asset_path)
+            header_labels_asset = ['Type', 'Code', 'Name', 'Task']
+            self.task_list_widget.setColumnCount(4)
+            row_num = 0
+            self.task_list_widget.clearContents()
+            self.task_list_widget.setHorizontalHeaderLabels(header_labels_asset)
+
+            rig_task = []
+            for item in os.listdir(asset_path):
+                item_path = os.path.join(asset_path, item)
+                # print(f'asset_path:{asset_path} {item} {}')
+                if os.path.isdir(item_path):
+                    print('character : ', item_path)
+                    rig_task.append(item)
+
+            low_max = len(rig_task)
+            self.task_list_widget.setRowCount(low_max)
+
+            for item in rig_task:
+                type_item = QTableWidgetItem(f'{searchAsset_item}')
+                code_item = QTableWidgetItem(f'{item}')
+                shot_item = QTableWidgetItem(f'{item}')
+                task_item = QTableWidgetItem(f'rig')
+                type_item.setFlags(type_item.flags() ^ Qt.ItemIsEditable)
+                code_item.setFlags(code_item.flags() ^ Qt.ItemIsEditable)
+                shot_item.setFlags(shot_item.flags() ^ Qt.ItemIsEditable)
+                task_item.setFlags(task_item.flags() ^ Qt.ItemIsEditable)
+                self.task_list_widget.setItem(row_num, 0, type_item)
+                self.task_list_widget.setItem(row_num, 1, code_item)
+                self.task_list_widget.setItem(row_num, 2, shot_item)
+                self.task_list_widget.setItem(row_num, 3, task_item)
+                row_num = row_num + 1
+
+            pass
     def copy_path_to_clipboard_wip(self):
         pass
     def open_work_path_wip(self):
