@@ -10,6 +10,54 @@ from maya.app.general import mayaMixin
 import pymel.core as pm
 import maya.cmds as cmds
 
+
+class AddWipVersionDialog(QDialog):
+    def __init__(self, text_a, test_b=None, test_c=None, parent=None):
+        super().__init__(parent)
+        self.textA = text_a
+        self.setWindowTitle('Wip Version Add')
+        self.setFixedSize(400, 300)
+        layout = QVBoxLayout()
+        # a
+        self.label_a = QLabel('v000 버전 추가 : (ex 999)', self)
+        layout.addWidget(self.label_a)
+        self.lineEdit_a = QLineEdit(self)
+        layout.addWidget(self.lineEdit_a)
+        if test_b:
+            self.lineEdit_a.setText(test_b)
+        # b
+        self.label_b = QLabel('w00 버전 추가 : (ex 99)', self)
+        layout.addWidget(self.label_b)
+        self.lineEdit_b = QLineEdit(self)
+        layout.addWidget(self.lineEdit_b)
+        if test_c:
+            self.lineEdit_b.setText(test_c)
+        # c
+        self.label_c = QLabel(' 버전  : ', self)
+        layout.addWidget(self.label_c)
+        self.lineEdit_c = QLineEdit(self)
+        layout.addWidget(self.lineEdit_c)
+        # ok
+        self.button = QPushButton('확인', self)
+        self.button.clicked.connect(self.accept)
+        layout.addWidget(self.button)
+        #
+        self.lineEdit_a.textChanged.connect(self.update_result)
+        self.lineEdit_b.textChanged.connect(self.update_result)
+        self.setLayout(layout)
+        self.update_result()
+
+    def update_result(self):
+        text1 = self.textA
+        text2 = self.lineEdit_a.text()
+        text3 = self.lineEdit_b.text()
+        #
+        self.lineEdit_c.setText(f'{text1}_v{text2}_w{text3}.mb')
+
+    def get_number(self):
+        return self.lineEdit_c.text()
+
+
 class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
     WINDOW_NAME = 'rig_manager_window_a'
     OPTIONVAR_TASKMANAGER_A = 'optionvar_rig_manager_a'
@@ -193,8 +241,8 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
         self.task_list_widget = QTableWidget()
         self.task_list_widget.setEnabled(True)
-        # self.task_list_widget.itemSelectionChanged.connect(self.on_task_list_selection_changed)
-        # self.task_list_widget.itemDoubleClicked.connect(self.on_task_list_item_double_clicked)
+        self.task_list_widget.itemSelectionChanged.connect(self.on_task_list_selection_changed)
+        self.task_list_widget.itemDoubleClicked.connect(self.on_task_list_item_double_clicked)
         # self.task_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         # self.task_list_widget.customContextMenuRequested.connect(self.task_list_context_menu)
         task_layout.addWidget(self.task_list_widget)
@@ -234,9 +282,9 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         # wip 파일 리스트
         self.wip_list_widget = QListWidget()
         work_layout.addWidget(self.wip_list_widget)
-        # self.wip_list_widget.itemDoubleClicked.connect(self.on_wip_list_double_clicked)
-        # self.wip_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.wip_list_widget.customContextMenuRequested.connect(self.wip_show_context_menu)
+        self.wip_list_widget.itemDoubleClicked.connect(self.on_wip_list_double_clicked)
+        self.wip_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.wip_list_widget.customContextMenuRequested.connect(self.wip_show_context_menu)
         ################################
         # mid right work
         ################################
@@ -334,6 +382,189 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         pass
     def open_work_path_wip(self):
         pass
+    def on_task_list_selection_changed(self):
+        selected_item = self.task_list_widget.selectedItems()
+        if selected_item:
+            rows = set()
+            for item in selected_item:
+                rows.add(item.row())
+            for row in rows:
+                for column in range(self.task_list_widget.columnCount()):
+                    item = self.task_list_widget.item(row, column)
+                    item.setSelected(True)
+    def on_task_list_item_double_clicked(self):
+        selected_item = self.task_list_widget.selectedItems()
+        if len(selected_item) == 4:
+            # log.info(f'{selected_item}')
+            # 선택한 아이템의 작업 path 를 가져온다.
+            current_dpe = self.current_drive_project_entity()
+            row = selected_item[0].row()
+            code_item = self.task_list_widget.item(row, 1)
+            print(f' get table item {row} {current_dpe} {code_item.text()}')
+            wip_path = os.path.join(current_dpe['drive'], 'vfx', current_dpe['project'], 'asset',current_dpe['asset'],
+                                    code_item.text(), 'rig', 'wip', 'scenes')
+            print(wip_path)
+            self.wip_path_field.setText(wip_path)
+            self.wip_list_widget.clear()
+            self.set_path_field(self.wip_list_widget, wip_path, r"(.*?)_v(\d{3})_w(\d{2}).mb")
+
+
+    def current_drive_project_entity(self):
+        searchDrive_item = self.searchDriveComboBox.currentText()
+        searchProject_item = self.searchProjectComboBox.currentText()
+        searchAsset_item = self.searchAssetTypeComboBox.currentText()
+        return_dic = {}
+        return_dic['drive'] = searchDrive_item
+        return_dic['project'] = searchProject_item
+        return_dic['asset'] = searchAsset_item
+        return return_dic
+
+    def set_path_field(self, field_a, path_a, pattern_a):
+        # field and path and pattern 주면 맞는지 확인하고 리스트에 넣는다.
+        # wip_list_widget , pub_list_widget
+        if os.path.isdir(path_a):
+            items = os.listdir(path_a)
+            #field_a.clear()
+            for item in items:
+                if re.match(pattern_a, item):
+                    print(f'{item}')
+                    add_item = QListWidgetItem(item)
+                    field_a.addItem(add_item)
+            if len(items) == 0:
+                add_item = QListWidgetItem('None Data')
+                field_a.addItem(add_item)
+        else:
+            field_a.clear()
+            add_item = QListWidgetItem('None Folder')
+            field_a.addItem(add_item)
+
+    def on_wip_list_double_clicked(self, item):
+        wip_file_path = self.wip_path_field.text()
+        # wip_select_file = self.wip_list_widget.selected
+        print(f'{wip_file_path} {item.text()}')
+        file_name = os.path.join(wip_file_path, item.text())
+        # 바로 오픈하지 않고 열겠습니까? 필요해보임
+        if os.path.isfile(file_name):
+            cmds.file(file_name, force=True, open=True, prompt=False, ignoreVersion=True, type='mayaBinary')
+        pass
+
+    def wip_show_context_menu(self, position):
+        # 오른쪽 메뉴 생성
+        menu = QMenu()
+        checkStart = False
+        if self.wip_list_widget.count() == 1:
+            item = self.wip_list_widget.item(0)
+            if item.text()[0] == 'N':
+                checkStart = True
+        elif self.wip_list_widget.count() == 0:
+            checkStart = True
+        else:
+            pass
+        if checkStart:
+            action = QAction(" Fist Working Environment Setup ", self)
+            action.triggered.connect(self.wip_right_fist_working_setup)
+            menu.addAction(action)
+            menu.addSeparator()
+
+        action = QAction(" wip copy folder path", self)
+        action.triggered.connect(self.wip_right_wip_copy_path)
+        menu.addAction(action)
+
+        action = QAction(" wip folder open", self)
+        action.triggered.connect(self.wip_right_open_folder)
+        menu.addAction(action)
+        menu.addSeparator()
+
+        if self.wip_list_widget.selectedItems():
+            action = QAction(" file open ", self)
+            action.triggered.connect(self.wip_right_file_open)
+            menu.addAction(action)
+
+            action = QAction(" copy  & +1 add version", self)
+            action.triggered.connect(self.wip_right_add_version)
+            menu.addAction(action)
+            menu.addSeparator()
+            # action = QAction(" Selected -> Upload PUB File  ", self)
+            # action.triggered.connect(self.wip_right_pub_upload)
+            # menu.addAction(action)
+        menu.exec_(self.wip_list_widget.mapToGlobal(position))
+
+    def wip_right_wip_copy_path(self):
+        print(f'  wip folder path copy')
+        self.copy_path_to_clipboard_wip()
+    def copy_path_to_clipboard_wip(self):
+        print(f' wip path field')
+        field_a = self.wip_path_field
+        path = field_a.text()
+        print(f'{path}')
+        self.copy_path_to_clipboard(path)
+
+    def copy_path_to_clipboard_pub(self):
+        print(f' pub path field')
+        field_a = self.pub_path_field
+        path = field_a.text()
+        print(f'{path}')
+        self.copy_path_to_clipboard(path)
+
+    def copy_path_to_clipboard(self, text_a):
+        path = text_a
+        if path == '':
+            return
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        pyperclip.copy(path)
+
+    def wip_right_open_folder(self):
+        print(f' wip folder open')
+        self.open_work_path_wip()
+
+    def open_work_path_wip(self):
+        field_a = self.wip_path_field
+        path = field_a.text()
+        self.open_work_path_a(path)
+
+    def open_work_path_a(self, text_a):
+        path = text_a
+        if os.path.isdir(path):
+            os.startfile(path)
+        else:
+            print(f' None Folder ')
+
+    def wip_right_file_open(self):
+        print(f' file open - wip right button')
+        self.file_open(self.wip_path_field, self.wip_list_widget)
+
+    def file_open(self, ptah_field, list_widget):
+        # wip 과 pub 아이템( 씬 ) 파일 열기
+        file_path = ptah_field.text()
+        select_file = list_widget.selectedItems()
+        file_name = os.path.join(file_path, select_file[0].text())
+        # 바로 오픈하지 않고 열겠습니까? 필요해보임
+        if os.path.isfile(file_name):
+            cmds.file(file_name, force=True, open=True, prompt=False, ignoreVersion=True, type='mayaBinary')
+
+    def wip_right_add_version(self):
+        print(f'  wip right add version')
+        folder_path = self.wip_path_field.text()
+        items = self.wip_list_widget.selectedItems()
+        wip_path = items[0].text()
+        print(f"{wip_path.split('_v' ,1)}")
+        text_a = wip_path.split('_v',1)[0]
+        text_b = wip_path.split('_v',1)[1].split('_w',1)[0]
+        text_c = wip_path.split('_v', 1)[1].split('_w', 1)[1]
+        text_c = text_c.replace('.mb','')
+        text_c = f'{(int(text_c) + 1):02d}'
+        dialog = AddWipVersionDialog(text_a, text_b, text_c, self)
+        old_path = os.path.join(folder_path,wip_path)
+        if dialog.exec_():
+            num_str_list = dialog.get_number()
+            new_path = os.path.join(folder_path,num_str_list)
+            print(f' 복사합니다. :{old_path} -> {new_path}')
+            shutil.copy(old_path,new_path)
+            self.wip_list_widget.clear()
+            self.set_path_field(self.wip_list_widget, self.wip_path_field.text(), r"(.*?)_v(\d{3})_w(\d{2}).mb")
+        pass
+
 
 def show_window():
     global RigManagerWindow
