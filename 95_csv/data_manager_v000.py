@@ -1,4 +1,5 @@
 # csv 파일을 가지고 원하는 데이터 가져 오는 연습
+# http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201030301
 import csv
 import os
 from datetime import datetime
