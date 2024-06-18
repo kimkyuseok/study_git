@@ -10,6 +10,52 @@ from maya.app.general import mayaMixin
 import pymel.core as pm
 import maya.cmds as cmds
 
+class CheckWorkDialog(QWidget):
+    def __init__(self, string_name, script_run, parent=None):
+        super().__init__(parent)
+        self.check = False
+        self.parent = parent
+        self.string_name = string_name
+        self.script_run = script_run
+        self.ui()
+
+    def ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        self.QPush_Button =QPushButton(self.string_name)
+        self.QPush_Button.setEnabled(True)
+        self.QPush_Button.clicked.connect(self.q_push_button)
+        main_layout.addWidget(self.QPush_Button)
+
+    def q_push_button(self):
+        check_a = self.script_run()
+        if check_a:
+            self.set_underline()
+            self.set_text_color(Qt.green)
+        else:
+            self.set_text_color(Qt.red)
+
+    def reset_underline(self):
+        # self.check = True
+        font = self.QPush_Button.font()
+        font.setStrikeOut(False)
+        self.QPush_Button.setFont(font)
+        self.set_text_color(Qt.white)
+
+    def set_underline(self):
+        print('set')
+        font = self.QPush_Button.font()
+        # font.setUnderline(True)
+        font.setStrikeOut(True)
+        self.QPush_Button.setFont(font)
+
+    def set_text_color(self, color):
+        palette = self.QPush_Button.palette()
+        new_palette = QPalette(palette)
+        new_palette.setColor(QPalette.ButtonText, color)
+        self.QPush_Button.setPalette(new_palette)
+
 
 class AddWipVersionDialog(QDialog):
     def __init__(self, text_a, test_b=None, test_c=None, parent=None):
@@ -296,6 +342,44 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         check_work_label.setStyleSheet('font-size: 10pt;')
         mid_right_layout.addWidget(check_work_label)
         mid_right_layout.addItem(QSpacerItem(5, 0))
+
+        check_work_widget = QWidget()
+        check_work_layout = QVBoxLayout(check_work_widget)
+        check_work_layout.setContentsMargins(0, 0, 0, 0)
+        check_work_layout.setSpacing(5)
+        mid_right_layout.addWidget(check_work_widget)
+        self.check_work_scroll = QScrollArea(check_work_widget)
+        self.check_work_scroll.setWidget(QWidget())
+        self.check_work_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.check_work_scroll.setFrameShape(QScrollArea.Box)
+        self.check_work_scroll.setFrameShadow(QScrollArea.Sunken)
+        self.check_work_scroll.setWidgetResizable(True)
+        self.check_work_scroll_layout = QVBoxLayout(self.check_work_scroll.widget())
+        self.check_work_scroll_layout.setAlignment(Qt.AlignTop)
+        self.check_work_scroll_layout.setSpacing(0)
+        check_work_layout.addWidget(self.check_work_scroll)
+        check_work_run_button = QPushButton('Run _ Check')
+        check_work_run_button.clicked.connect(self.check_run05)
+        check_work_reset_button = QPushButton('Reset _ Check')
+        check_work_reset_button.clicked.connect(self.check_work_reset_run)
+        check_work_layout.addWidget(check_work_run_button)
+        check_work_layout.addWidget(check_work_reset_button)
+
+        self.check_buttonlist = []
+        add_item = CheckWorkDialog('컨테이너 그룹 여부', self.check_run01, parent=self)
+        self.check_work_scroll_layout.addWidget(add_item)
+        self.check_buttonlist.append(add_item)
+        add_item = CheckWorkDialog('geo 그룹 여부', self.check_run02, parent=self)
+        self.check_work_scroll_layout.addWidget(add_item)
+        self.check_buttonlist.append(add_item)
+        add_item = CheckWorkDialog('rig 그룹 여부', self.check_run03, parent=self)
+        self.check_work_scroll_layout.addWidget(add_item)
+        self.check_buttonlist.append(add_item)
+        add_item = CheckWorkDialog('중복 이름의 오브젝트 확인', self.check_run04, parent=self)
+        self.check_work_scroll_layout.addWidget(add_item)
+        self.check_buttonlist.append(add_item)
+
+
         ################################
         # right work
         ################################
@@ -307,6 +391,30 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         script_work_label.setStyleSheet('font-size: 10pt;')
         right_script_layout.addWidget(script_work_label)
         right_script_layout.addItem(QSpacerItem(5, 0))
+
+    def check_run01(self):
+        print('temp01')
+        return False
+    def check_run02(self):
+        print('temp02')
+        return True
+    def check_run03(self):
+        print('temp03')
+        return False
+    def check_run04(self):
+        print('temp04')
+        return True
+    def check_run05(self):
+        print('temp05')
+        for index in range(self.check_work_scroll_layout.count()):
+            dialog = self.check_work_scroll_layout.itemAt(index).widget()
+            dialog.QPush_Button.click()  # Simulate the button click
+
+    def check_work_reset_run(self):
+        print('reset')
+        for index in range(self.check_work_scroll_layout.count()):
+            dialog = self.check_work_scroll_layout.itemAt(index).widget()
+            dialog.reset_underline()
 
     def searchDriveComboBox_change(self):
         print('dirve - searchDriveComboBox_change')
