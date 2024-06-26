@@ -10,6 +10,91 @@ from maya.app.general import mayaMixin
 import pymel.core as pm
 import maya.cmds as cmds
 
+class MOD_ChangeWidget(QWidget):
+    def __init__(self, asset, main_path, versions, current, parent=None):
+        super().__init__(parent)
+        self.asset = asset
+        self.main_path = main_path
+        self.versions = versions
+        self.current = current
+        self.parent = parent
+        self.ui()
+
+    def ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        display_name = self.asset
+        self.asset_code_label = QLabel(display_name)
+        main_layout.addWidget(self.asset_code_label)
+
+        self.version_combobox = QComboBox()
+        self.version_combobox.addItem("-versions-")
+        for i in self.versions:
+            self.version_combobox.addItem(i)
+        self.version_combobox.setCurrentText(self.current)
+        main_layout.addWidget(self.version_combobox)
+
+        sub_layout = QHBoxLayout()
+        main_layout.addLayout(sub_layout)
+        self.open_folder_button = QPushButton('Open Folder')
+        self.open_folder_button.clicked.connect(self.open_folder)
+        sub_layout.addWidget(self.open_folder_button)
+
+        self.import_file_button = QPushButton('Change')
+        self.import_file_button.clicked.connect(self.get_file)
+        sub_layout.addWidget(self.import_file_button)
+
+    def open_folder(self):
+        path = self.main_path
+        if os.path.isdir(path):
+            os.startfile(path)
+        else:
+            print(f' None Folder ')
+
+    def get_file(self):
+        # change 하는 부분
+        # geo 폴더가 있는지 확인 없으면 끝
+        if pm.objExists('geo') == False:
+            return
+        model = pm.listRelatives('geo', children=True, fullPath=True) or []
+        mesh = []
+        skinned_joint = []
+        if model:
+            pm.select(hi=1)
+
+        print(f'mod : {model} \n jnt : {skinned_joint} \n mesh:{mesh}')
+
+        #
+        """
+        path = self.main_path
+        filename = self.version_combobox.currentText()
+        file_path = os.path.join(path, filename)
+        if self.asset.find('__') != -1:
+            split_a = self.asset.split('__')
+            if split_a[0] == 'character':
+                cmds.file(file_path, i=True, namespace=split_a[1])
+        elif self.asset.find('cfx Set:') != -1:
+            split_a = self.asset.split(':')
+            if split_a[0] == 'cfx Set':
+                print('cfx Set')
+                cmds.file(file_path, i=True)
+                dic_blendshape = {'crow': ['crowBody', 'crowBody_scalp_mesh'],
+                                  'rat': ['rat_body_mesh', 'rat_body_scalp_mesh']}
+                if split_a[1] in dic_blendshape:
+                    chache_bs = cmds.ls(f'*:{dic_blendshape[split_a[1]][0]}', type='transform')
+                    if len(chache_bs) == 1:
+                        bs_node = cmds.blendShape(chache_bs[0], dic_blendshape[split_a[1]][1], name='cfx_bs')[0]
+                        cmds.setAttr(bs_node + '.' + dic_blendshape[split_a[1]][0], 1)
+                        cmds.parent('cfx',chache_bs[0].split(':',1)[0]+':geo')
+
+        elif os.path.exists(file_path):
+            cmds.file(file_path, i=True)
+        else:
+            pass
+        """
+
+
 class CheckWorkDialog(QWidget):
     def __init__(self, string_name, script_run, parent=None):
         super().__init__(parent)
@@ -387,23 +472,136 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         right_widget_layout.addLayout(right_script_layout)
         right_script_layout.setContentsMargins(0, 0, 0, 0)
         right_script_layout.setSpacing(5)
-        script_work_label = QLabel('script work')
+        script_work_label = QLabel('mod change work')
         script_work_label.setStyleSheet('font-size: 10pt;')
         right_script_layout.addWidget(script_work_label)
         right_script_layout.addItem(QSpacerItem(5, 0))
 
+        mod_change_widget = QWidget()
+        mod_change_layout = QVBoxLayout(mod_change_widget)
+        mod_change_layout.setContentsMargins(0, 0, 0, 0)
+        mod_change_layout.setSpacing(5)
+        right_script_layout.addWidget(mod_change_widget)
+
+        self.mod_change_scroll = QScrollArea(mod_change_widget)
+        self.mod_change_scroll.setWidget(QWidget())
+        self.mod_change_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.mod_change_scroll.setFrameShape(QScrollArea.Box)
+        self.mod_change_scroll.setFrameShadow(QScrollArea.Sunken)
+        self.mod_change_scroll.setWidgetResizable(True)
+        self.mod_change_scroll_layout = QVBoxLayout(self.mod_change_scroll.widget())
+        self.mod_change_scroll_layout.setAlignment(Qt.AlignTop)
+        self.mod_change_scroll_layout.setSpacing(0)
+        right_script_layout.addWidget(self.mod_change_scroll)
+        find_model_run_button = QPushButton('Find Model Asset')
+        find_model_run_button.clicked.connect(self.find_model_button_run)
+        mod_change_layout.addWidget(find_model_run_button)
+
+
+
+    def find_model_button_run(self):
+        print('-**-')
+        searchDrive_item = self.searchDriveComboBox.currentText()
+        searchProject_item = self.searchProjectComboBox.currentText()
+        searchAsset_item = self.searchAssetTypeComboBox.currentText()
+        selected_item = self.task_list_widget.selectedItems()
+        if selected_item == []:
+            print(f'None Selected Rig Task Item')
+            return False
+        mod_abc_path = ''
+        if len(selected_item) == 4:
+            row = selected_item[0].row()
+            code_item = self.task_list_widget.item(row, 2)
+            print(f'item name :::: {code_item.text()}')
+            mod_abc_path = os.path.join(searchDrive_item, 'vfx', searchProject_item, 'asset',
+                                        searchAsset_item, code_item.text(), 'mod',
+                                        'pub', 'data', 'abc', 'versions')
+            mod_abc_path = mod_abc_path.replace('/','\\')
+        print(mod_abc_path)
+        if os.path.exists(mod_abc_path):
+            print(mod_abc_path)
+            items = os.listdir(mod_abc_path)
+            pattern = re.compile(r"(.*?)_v(\d{3}).abc")
+            highest_v = -1
+            highest_file = None
+            versions = []
+            for i in os.listdir(mod_abc_path):
+                mach = pattern.match(i)
+                if mach:
+                    versions.append(i)
+                    version = int(mach.group(2))
+                    if version > highest_v:
+                        highest_v = version
+                        highest_file = i
+            print(highest_file)
+            add_item = MOD_ChangeWidget('abc', mod_abc_path, versions, highest_file, parent=self)
+            self.mod_change_scroll_layout.addWidget(add_item)
+        mod_version_path = ''
+        if len(selected_item) == 4:
+            row = selected_item[0].row()
+            code_item = self.task_list_widget.item(row, 2)
+            print(f'item name :::: {code_item.text()}')
+            mod_version_path = os.path.join(searchDrive_item, 'vfx', searchProject_item, 'asset',
+                                        searchAsset_item, code_item.text(), 'mod',
+                                        'pub', 'data', 'abc', 'versions')
+            mod_version_path = mod_version_path.replace('/','\\')
+        print(mod_version_path)
+        if os.path.exists(mod_version_path):
+            print(mod_version_path)
+            items = os.listdir(mod_version_path)
+            pattern = re.compile(r"(.*?)_v(\d{3}).abc")
+            highest_v = -1
+            highest_file = None
+            versions = []
+            for i in os.listdir(mod_version_path):
+                mach = pattern.match(i)
+                if mach:
+                    versions.append(i)
+                    version = int(mach.group(2))
+                    if version > highest_v:
+                        highest_v = version
+                        highest_file = i
+            print(highest_file)
+            add_item = MOD_ChangeWidget('mod', mod_version_path, versions, highest_file, parent=self)
+            self.mod_change_scroll_layout.addWidget(add_item)
+
     def check_run01(self):
         print('temp01')
-        return False
+        # get seleted task item name
+        selected_item = self.task_list_widget.selectedItems()
+        if selected_item == []:
+            print(f'None Selected Rig Task Item')
+            return False
+        if len(selected_item) == 4:
+            row = selected_item[0].row()
+            code_item = self.task_list_widget.item(row, 3)
+            print(code_item.text())
+        if pm.objExists(code_item.text()):
+            return True
+        else:
+            return False
+
     def check_run02(self):
-        print('temp02')
-        return True
+        if pm.objExists('geo'):
+            return True
+        else:
+            return False
     def check_run03(self):
-        print('temp03')
-        return False
+        if pm.objExists('rig'):
+            return True
+        else:
+            return False
     def check_run04(self):
-        print('temp04')
-        return True
+        check = False
+        for i in pm.ls(type='transform') and pm.ls(type='shape'):
+            if i.find('|')!=-1:
+                check = True
+                print(f'씬 안에 중복된 이름이 발견됨 : {i}')
+        if check == True:
+            return False
+        else:
+            return True
+
     def check_run05(self):
         print('temp05')
         for index in range(self.check_work_scroll_layout.count()):
