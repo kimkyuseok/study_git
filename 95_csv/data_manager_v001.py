@@ -7,7 +7,8 @@ from datetime import datetime
 folder_path = r'D:\test\chackUS\study_git\95_csv\csv'
 # file_name = 'data_3910_20240614.csv'
 # file_name = 'data_2826_20240617.csv'
-file_name = 'data_1511_20240617.csv'
+# file_name = 'data_1511_20240617.csv'
+file_name = 'data_4007_20240618.csv'
 full_file_path = os.path.join(folder_path, file_name)
 string_call = 'KOSPI200콜'
 string_put = 'KOSPI200풋'
