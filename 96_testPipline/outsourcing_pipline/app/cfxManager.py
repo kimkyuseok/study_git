@@ -623,10 +623,13 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             dic_ani_versions_h = {}
             for i in os.listdir(ani_pub_cache_abc_path):
                 mach = pattern.match(i)
-                if mach.group(1) not in dic_ani_versions:
-                    dic_ani_versions[mach.group(1)] = []
                 if mach:
-                    dic_ani_versions[mach.group(1)].append(i)
+                    print(mach)
+                    print(mach.group(1))
+                    if mach.group(1) not in dic_ani_versions:
+                        dic_ani_versions[mach.group(1)] = []
+                    if mach:
+                        dic_ani_versions[mach.group(1)].append(i)
             for i in dic_ani_versions:
                 highest_v = -1
                 highest_file = None
