@@ -52,19 +52,108 @@ class MOD_ChangeWidget(QWidget):
         else:
             print(f' None Folder ')
 
+    def find_skin_clusters_in_geo_group(self):
+        # 1. 리깅 파일 안에 있는 geo 그룹 찾기
+        geo_group = None
+        all_groups = cmds.ls(type='transform')
+        for group in all_groups:
+            if group == 'old_geo':  # 'geo' 그룹을 찾음
+                geo_group = group
+                break
+
+        if not geo_group:
+            cmds.warning("Cannot find 'geo' group in the scene.")
+            return
+
+        # 2. geo 그룹 내 하위 객체 검색
+        child_objects = cmds.listRelatives(geo_group, ad=True, type='transform', fullPath=True) or []
+        skin_clusters_dict = {}
+
+        for obj in child_objects:
+            # 3. 각 객체에서 skincluster 있는지 확인
+            skin_cluster = cmds.ls(cmds.listHistory(obj), type='skinCluster')
+            if skin_cluster:
+                # 4. skincluster가 있으면 매쉬-조인트 리스트를 딕셔너리에 추가
+                mesh_node = cmds.listRelatives(obj, shapes=True, fullPath=False)[0]
+                joints = cmds.skinCluster(skin_cluster[0], query=True, inf=True)
+                skin_clusters_dict[mesh_node] = joints
+
+        # 5. 최종적으로 딕셔너리 반환
+        return skin_clusters_dict
+
     def get_file(self):
         # change 하는 부분
         # geo 폴더가 있는지 확인 없으면 끝
         if pm.objExists('geo') == False:
             return
-        model = pm.listRelatives('geo', children=True, fullPath=True) or []
-        mesh = []
-        skinned_joint = []
-        if model:
-            pm.select(hi=1)
+        # 스크립트 실행
+        s_geo = 'geo'
+        s_oldgeo = 'old_geo'
+        s_prefix = 'old'
+        if cmds.objExists(s_geo):
+            print('check01')
+            cmds.rename(s_geo, s_oldgeo)
+            for i in cmds.listRelatives(s_oldgeo):
+                selected_object = cmds.ls(i, dag=True, type='transform')
+                print(selected_object)
+                if not selected_object:
+                    cmds.warning("선택한 오브젝트를 찾을 수 없습니다.")
+                for node in selected_object:
+                    new_name = s_prefix + '_' + node
+                    cmds.rename(node, new_name)
+            result = self.find_skin_clusters_in_geo_group()
+            print(result)  # 딕셔너리 출력 혹은 다른 작업 수행
+        filename = self.version_combobox.currentText()
 
-        print(f'mod : {model} \n jnt : {skinned_joint} \n mesh:{mesh}')
+        if os.path.isdir(self.main_path):
+            print(self.main_path,filename)
+            if self.asset == 'abc':
+                cmds.AbcImport(os.path.join(self.main_path,filename))
+                delete_parent = None
+                if cmds.objExists(s_geo):
+                    delete_parent = cmds.listRelatives(s_geo, parent=True, fullPath=False)
+                    new_parent = cmds.listRelatives(s_oldgeo, parent=True, fullPath=False)
+                    cmds.parent(s_geo, new_parent[0])
+                    for shape_name, joint_list in result.items():
+                        new_shape_name = shape_name.replace('old_', '')
 
+                        # 선택된 객체들의 이름
+                        source_object = shape_name
+                        destination_object = new_shape_name
+                        destination_skin_cluster = cmds.skinCluster(joint_list, new_shape_name, toSelectedBones=True, bindMethod=0,
+                                                        normalizeWeights=1)[0]
+
+                        # 스킨 클러스터 노드 가져오기
+                        source_skin_cluster = cmds.ls(cmds.listHistory(source_object), type='skinCluster')[0]
+                        # source_skin_cluster = cmds.skinCluster(source_object, query=True, ignoreFuture=True)
+                        # source_skin_cluster = cmds.listConnections(source_object, type='skinCluster')
+                        # destination_skin_cluster = cmds.listConnections(destination_object, type='skinCluster')
+
+                        if not source_skin_cluster:
+                            cmds.warning(f"No skinCluster found for {source_object}. Aborting copySkinWeights.")
+                            cmds.error("Source skinCluster not found.")
+                            raise RuntimeError("Source skinCluster not found.")
+
+                        if not destination_skin_cluster:
+                            cmds.warning(f"No skinCluster found for {destination_object}. Aborting copySkinWeights.")
+                            cmds.error("Destination skinCluster not found.")
+                            raise RuntimeError("Destination skinCluster not found.")
+
+                        # 스킨 가중치 복사
+                        cmds.select(clear=True)
+                        cmds.select(source_object, add=True)
+                        cmds.select(destination_object, add=True)
+                        print(source_object,destination_object,source_skin_cluster,destination_skin_cluster)
+                        cmds.copySkinWeights(
+                            sourceSkin=source_skin_cluster,
+                            destinationSkin=destination_skin_cluster,
+                            noMirror=True,
+                            surfaceAssociation='closestPoint',
+                            influenceAssociation=('oneToOne', 'oneToOne', 'oneToOne')
+                        )
+                    if delete_parent:
+                        cmds.delete(delete_parent)
+                    #cmds.delete(s_oldgeo)
         #
         """
         path = self.main_path
@@ -501,6 +590,7 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
 
     def find_model_button_run(self):
         print('-**-')
+        self.list_layout_item_remove(self.mod_change_scroll_layout)
         searchDrive_item = self.searchDriveComboBox.currentText()
         searchProject_item = self.searchProjectComboBox.currentText()
         searchAsset_item = self.searchAssetTypeComboBox.currentText()
@@ -543,13 +633,13 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             print(f'item name :::: {code_item.text()}')
             mod_version_path = os.path.join(searchDrive_item, 'vfx', searchProject_item, 'asset',
                                         searchAsset_item, code_item.text(), 'mod',
-                                        'pub', 'data', 'abc', 'versions')
+                                        'pub', 'scenes', 'versions')
             mod_version_path = mod_version_path.replace('/','\\')
         print(mod_version_path)
         if os.path.exists(mod_version_path):
             print(mod_version_path)
             items = os.listdir(mod_version_path)
-            pattern = re.compile(r"(.*?)_v(\d{3}).abc")
+            pattern = re.compile(r"(.*?)_v(\d{3}).mb")
             highest_v = -1
             highest_file = None
             versions = []
@@ -871,7 +961,17 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
             self.set_path_field(self.wip_list_widget, self.wip_path_field.text(), r"(.*?)_v(\d{3})_w(\d{2}).mb")
         pass
 
-
+    def list_layout_item_remove(self,list_layout_a):
+        countlayoutitem = list_layout_a.count()
+        #print(countlayoutitem)
+        for i in reversed(range(countlayoutitem)):
+            item = list_layout_a.itemAt(i)
+            if isinstance(item, QSpacerItem):
+                list_layout_a.removeItem(item)
+            elif item.widget() is not None:
+                widget = item.widget()
+                list_layout_a.removeWidget(widget)
+                widget.deleteLater()
 def show_window():
     global RigManagerWindow
 
