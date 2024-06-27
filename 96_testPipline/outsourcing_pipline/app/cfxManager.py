@@ -679,15 +679,17 @@ class CFXManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 print(f'yeti path {cfx_path}')
                 for i in os.listdir(cfx_path):
                     mach = pattern.match(i)
-                    if mach:
-                        print(mach.group(1),int(mach.group(2)))
-                        new_path = os.path.join(cfx_path,
-                                                f"{mach.group(1).split('__')[0]}__cfx__v{int(mach.group(2))+1:03d}",
-                                                yeti_node.name())
-                    else:
-                        new_path = os.path.join(cfx_path,
-                                                f"{mach.group(1).split('__')[0]}__cfx__v{1:03d}",
-                                                yeti_node.name())
+                    if mach != None:
+                        print(mach.group(1), int(mach.group(2)))
+                        if mach:
+                            print(mach.group(1),int(mach.group(2)))
+                            new_path = os.path.join(cfx_path,
+                                                    f"{mach.group(1).split('__')[0]}__cfx__v{int(mach.group(2))+1:03d}",
+                                                    yeti_node.name())
+                        else:
+                            new_path = os.path.join(cfx_path,
+                                                    f"{mach.group(1).split('__')[0]}__cfx__v{1:03d}",
+                                                    yeti_node.name())
             if len(os.listdir(cfx_path)) == 0:
                 new_path = os.path.join(cfx_path,
                                         f"{ch_name}__cfx__v{1:03d}",
