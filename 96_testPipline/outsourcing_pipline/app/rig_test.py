@@ -29,3 +29,4 @@ if org_shape and out_shape:
     pm.PyNode(dm + '.outputGeometry[0]') >> pm.PyNode(pw + '.input[0].inputGeometry')
     pm.PyNode(org_shape + '.outMesh') >> pm.PyNode(pw + '.originalGeometry[0]')
     pm.PyNode(pw + '.outputGeometry[0]') >> pm.PyNode(out_shape + '.inMesh')
+# 결론 - 원청 입장에서; 델타메쉬  구지 숨길필요가;;
