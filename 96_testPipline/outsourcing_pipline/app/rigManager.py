@@ -116,44 +116,44 @@ class MOD_ChangeWidget(QWidget):
                     cmds.parent(s_geo, new_parent[0])
                     for shape_name, joint_list in result.items():
                         new_shape_name = shape_name.replace('old_', '')
+                        if cmds.objExists(shape_name) and cmds.objExists(new_shape_name):
+                            # 선택된 객체들의 이름
+                            source_object = shape_name
+                            destination_object = new_shape_name
+                            destination_skin_cluster = cmds.skinCluster(joint_list, new_shape_name, toSelectedBones=True, bindMethod=0,
+                                                            normalizeWeights=1)[0]
 
-                        # 선택된 객체들의 이름
-                        source_object = shape_name
-                        destination_object = new_shape_name
-                        destination_skin_cluster = cmds.skinCluster(joint_list, new_shape_name, toSelectedBones=True, bindMethod=0,
-                                                        normalizeWeights=1)[0]
+                            # 스킨 클러스터 노드 가져오기
+                            source_skin_cluster = cmds.ls(cmds.listHistory(source_object), type='skinCluster')[0]
+                            # source_skin_cluster = cmds.skinCluster(source_object, query=True, ignoreFuture=True)
+                            # source_skin_cluster = cmds.listConnections(source_object, type='skinCluster')
+                            # destination_skin_cluster = cmds.listConnections(destination_object, type='skinCluster')
 
-                        # 스킨 클러스터 노드 가져오기
-                        source_skin_cluster = cmds.ls(cmds.listHistory(source_object), type='skinCluster')[0]
-                        # source_skin_cluster = cmds.skinCluster(source_object, query=True, ignoreFuture=True)
-                        # source_skin_cluster = cmds.listConnections(source_object, type='skinCluster')
-                        # destination_skin_cluster = cmds.listConnections(destination_object, type='skinCluster')
+                            if not source_skin_cluster:
+                                cmds.warning(f"No skinCluster found for {source_object}. Aborting copySkinWeights.")
+                                cmds.error("Source skinCluster not found.")
+                                raise RuntimeError("Source skinCluster not found.")
 
-                        if not source_skin_cluster:
-                            cmds.warning(f"No skinCluster found for {source_object}. Aborting copySkinWeights.")
-                            cmds.error("Source skinCluster not found.")
-                            raise RuntimeError("Source skinCluster not found.")
+                            if not destination_skin_cluster:
+                                cmds.warning(f"No skinCluster found for {destination_object}. Aborting copySkinWeights.")
+                                cmds.error("Destination skinCluster not found.")
+                                raise RuntimeError("Destination skinCluster not found.")
 
-                        if not destination_skin_cluster:
-                            cmds.warning(f"No skinCluster found for {destination_object}. Aborting copySkinWeights.")
-                            cmds.error("Destination skinCluster not found.")
-                            raise RuntimeError("Destination skinCluster not found.")
-
-                        # 스킨 가중치 복사
-                        cmds.select(clear=True)
-                        cmds.select(source_object, add=True)
-                        cmds.select(destination_object, add=True)
-                        print(source_object,destination_object,source_skin_cluster,destination_skin_cluster)
-                        cmds.copySkinWeights(
-                            sourceSkin=source_skin_cluster,
-                            destinationSkin=destination_skin_cluster,
-                            noMirror=True,
-                            surfaceAssociation='closestPoint',
-                            influenceAssociation=('oneToOne', 'oneToOne', 'oneToOne')
-                        )
+                            # 스킨 가중치 복사
+                            cmds.select(clear=True)
+                            cmds.select(source_object, add=True)
+                            cmds.select(destination_object, add=True)
+                            print(source_object,destination_object,source_skin_cluster,destination_skin_cluster)
+                            cmds.copySkinWeights(
+                                sourceSkin=source_skin_cluster,
+                                destinationSkin=destination_skin_cluster,
+                                noMirror=True,
+                                surfaceAssociation='closestPoint',
+                                influenceAssociation=('oneToOne', 'oneToOne', 'oneToOne')
+                            )
                     if delete_parent:
                         cmds.delete(delete_parent)
-                    #cmds.delete(s_oldgeo)
+                    cmds.delete(s_oldgeo)
         #
         """
         path = self.main_path
