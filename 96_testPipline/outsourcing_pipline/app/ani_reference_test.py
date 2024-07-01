@@ -16,7 +16,7 @@ def get_reference_list():
 def replace_reference(reference_name, new_path):
     try:
         # 레퍼런스 이름에서 필요한 값 추출 (예: 'rat_rig_v01RN'에서 'rat' 추출)
-        ref_key = reference_name.split('_rig')[0]        
+        ref_key = reference_name.split('_rig')[0]
         # 데이터로 제공된 경로로 레퍼런스 교체
         cmds.file(new_path, loadReference=reference_name, type="mayaBinary", options="v=0")
         # 교체 성공 메시지 출력
