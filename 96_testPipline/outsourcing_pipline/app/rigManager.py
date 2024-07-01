@@ -280,7 +280,7 @@ class AddWipVersionDialog(QDialog):
 
 class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
     WINDOW_NAME = 'rig_manager_window_a'
-    OPTIONVAR_TASKMANAGER_A = 'optionvar_rig_manager_a'
+    OPTIONVAR_RIGMANAGER_A = 'optionvar_rig_manager_a'
 
     def __init__(self):
         super(RigManagerWindow, self).__init__()
@@ -290,6 +290,7 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         self.setWindowTitle(self.WINDOW_NAME)
         self.setGeometry(200, 200, 1700, 800)
         self.ui()
+        self.get_optionvar_a()
 
     def ui(self):
         print('rig manager ui start.')
@@ -842,6 +843,7 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
         # 바로 오픈하지 않고 열겠습니까? 필요해보임
         if os.path.isfile(file_name):
             cmds.file(file_name, force=True, open=True, prompt=False, ignoreVersion=True, type='mayaBinary')
+            self.set_optionvar_b()
         pass
 
     def wip_show_context_menu(self, position):
@@ -972,6 +974,24 @@ class RigManagerWindow(mayaMixin.MayaQWidgetBaseMixin, QMainWindow):
                 widget = item.widget()
                 list_layout_a.removeWidget(widget)
                 widget.deleteLater()
+
+    def set_optionvar_b(self):
+        current = self.current_drive_project_entity()
+        option_a = f"{current['drive']},{current['project']},{current['asset']}"
+        self.set_optionvar_a(option_a)
+
+    def set_optionvar_a(self, optionA):
+        cmds.optionVar(sv=(self.OPTIONVAR_RIGMANAGER_A, optionA))
+
+    def get_optionvar_a(self):
+        get_string = (cmds.optionVar(q=self.OPTIONVAR_RIGMANAGER_A))
+        print(f' get_optionvar_a : {get_string}')
+        if len(get_string) > 4:
+            get_list = (get_string.split(','))
+            self.searchDriveComboBox.setCurrentText(get_list[0])
+            self.searchProjectComboBox.setCurrentText(get_list[1])
+            self.searchAssetTypeComboBox.setCurrentText(get_list[2])
+
 def show_window():
     global RigManagerWindow
 
