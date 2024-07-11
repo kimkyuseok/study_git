@@ -18,4 +18,6 @@ def remove_prefix_from_filenames(directory):
 
 # 함수 호출
 directory_path = r'X:\VFX\sgn\shot\JJW_BS_001\stablediffusion\out'
+
+
 remove_prefix_from_filenames(directory_path)
