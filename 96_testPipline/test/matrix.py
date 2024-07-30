@@ -1,5 +1,24 @@
 import pymel.core as pm
 
+ch_name = 'test'
+
+
+def spineOption(s_name, i_joint, b_axis, b_mirror):
+    outGrp = pm.createNode('transform', n=ch_name + s_name)
+    parentGrp = pm.createNode('transform', n=ch_name + s_name + 'Parent')
+    TopGrp = pm.createNode('transform', n=ch_name + s_name + 'Top')
+    intCount = 0
+    NumGrpList = []
+    for i in range(0, intCount):
+        NumGrp = pm.createNode('transform', n=f'{ch_name}_{s_name}_{i:02}Grp')
+        pm.parent(NumGrp, parentGrp)
+        NumGrpList.append(NumGrp)
+    NumGrpWeight = [(i + 1) / (n + 1) for i in range(i_joint)]
+    NumGrpWeightRev = NumGrpWeight.reverse()
+    for i in range(i_joint):
+    # NumGrpList 를 불러와서 웨이트 를 각각 넣어주면 끝.
+    return outGrp
+
 
 def qrpct(nodea, nodeb, nodec, weighta, weightb):
     nodea = pm.PyNode(nodea)
@@ -56,4 +75,16 @@ def qrpct(nodea, nodeb, nodec, weighta, weightb):
     weightb >> mtdrb.input2Z
 
 
-qrpct('pCube1', 'pCube2', 'pCube3', 'pCube3.test', 'pCube3.retest')
+def qrrv(input1, input2, name='subtract'):
+    input1 = pm.PyNode(input1)
+    input2 = pm.PyNode(input2)
+    # reverse subtract
+    fms = pm.createNode('floatMath', n=name + '_FMS')
+    input1 >> fms.floatB
+    fms.operation.set(1)
+    # output
+    fms.outFloat >> input2
+
+
+qrrv('pCube4.test', 'pCube4.retest')
+qrpct('pCube1', 'pCube2', 'pCube3', 'pCube3.test', 'pCube3.retest')    
