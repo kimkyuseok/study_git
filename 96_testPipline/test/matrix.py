@@ -1,11 +1,15 @@
 import pymel.core as pm
+import maya.cmds as cmds
+import math
 
 ch_name = 'test'
 
 
 def spineOption(s_name, i_joint, b_axis, b_mirror):
     outGrp = pm.createNode('transform', n=ch_name + s_name)
+    # 박스 쉐입
     parentGrp = pm.createNode('transform', n=ch_name + s_name + 'Parent')
+    # 피라미드 쉐입
     TopGrp = pm.createNode('transform', n=ch_name + s_name + 'Top')
     intCount = 0
     NumGrpList = []
@@ -16,7 +20,8 @@ def spineOption(s_name, i_joint, b_axis, b_mirror):
     NumGrpWeight = [(i + 1) / (n + 1) for i in range(i_joint)]
     NumGrpWeightRev = NumGrpWeight.reverse()
     for i in range(i_joint):
-    # NumGrpList 를 불러와서 웨이트 를 각각 넣어주면 끝.
+        pass
+        # NumGrpList 를 불러와서 웨이트 를 각각 넣어주면 끝.
     return outGrp
 
 
@@ -86,5 +91,339 @@ def qrrv(input1, input2, name='subtract'):
     fms.outFloat >> input2
 
 
-qrrv('pCube4.test', 'pCube4.retest')
-qrpct('pCube1', 'pCube2', 'pCube3', 'pCube3.test', 'pCube3.retest')    
+def create_cube_with_curves(width=1, height=1, depth=1):
+    # Define the vertices of the cube
+    vertices = [
+        [width / 2, height / 2, depth / 2],
+        [-width / 2, height / 2, depth / 2],
+        [-width / 2, -height / 2, depth / 2],
+        [width / 2, -height / 2, depth / 2],
+        [width / 2, height / 2, depth / 2],
+
+        [width / 2, height / 2, -depth / 2],
+        [-width / 2, height / 2, -depth / 2],
+        [-width / 2, -height / 2, -depth / 2],
+        [width / 2, -height / 2, -depth / 2],
+        [width / 2, height / 2, -depth / 2],
+
+        [-width / 2, height / 2, -depth / 2],
+        [-width / 2, height / 2, depth / 2],
+        [-width / 2, -height / 2, depth / 2],
+        [-width / 2, -height / 2, -depth / 2],
+        [width / 2, -height / 2, -depth / 2],
+        [width / 2, -height / 2, depth / 2]
+    ]
+
+    # Create the cube with curves
+    curve_points = [tuple(vertex) for vertex in vertices]
+    curve = pm.curve(p=curve_points, d=1)
+
+    # Create vertical edges of the cube
+    # for i in range(4):
+    #     pm.curve(p=[vertices[i], vertices[i+5]], d=1)
+
+    return curve
+
+
+def create_pyramid_with_curves(base_width=1, height=0.5, dn=-0.5):
+    # Define the base vertices of the pyramid
+    half_width = base_width / 2
+    base_vertices = [
+        [half_width, dn, half_width],
+        [-half_width, dn, half_width],
+        [-half_width, dn, -half_width],
+        [half_width, dn, -half_width],
+        [half_width, dn, half_width],  # Close the base
+        [0, height, 0],
+        [-half_width, dn, half_width],
+        [-half_width, dn, -half_width],
+        [0, height, 0],
+        [half_width, dn, -half_width]
+    ]
+
+    # Define the apex vertex of the pyramid
+    # apex = [0, height, 0]
+
+    # Create the base curve
+    base_curve = pm.curve(p=base_vertices, d=1)
+
+    # Create the edges from the base to the apex
+    # for base_vertex in base_vertices[:-1]:  # Exclude the last vertex to avoid duplicating the first vertex
+    #   edge_curve = pm.curve(p=[base_vertex, apex], d=1)
+
+    return base_curve
+
+
+def create_sphere_curve(radius=1.0, segments=8):
+    points = []
+    num_circles = 1
+
+    # Create circles along the X, Y, and Z axes
+    for axis in ['X', 'Y', 'Z']:
+        for i in range(num_circles):
+            angle = (i / float(num_circles)) * 180.0
+            for j in range(segments):
+                theta = 2 * math.pi * j / segments
+                if axis == 'X':
+                    x = 0
+                    y = radius * math.cos(theta)
+                    z = radius * math.sin(theta)
+                    y, z = (y * math.cos(math.radians(angle)) - z * math.sin(math.radians(angle)),
+                            y * math.sin(math.radians(angle)) + z * math.cos(math.radians(angle)))
+                elif axis == 'Y':
+                    x = radius * math.cos(theta)
+                    y = 0
+                    z = radius * math.sin(theta)
+                    x, z = (x * math.cos(math.radians(angle)) + z * math.sin(math.radians(angle)),
+                            -x * math.sin(math.radians(angle)) + z * math.cos(math.radians(angle)))
+                elif axis == 'Z':
+                    x = radius * math.cos(theta)
+                    y = radius * math.sin(theta)
+                    z = 0
+                    x, y = (x * math.cos(math.radians(angle)) - y * math.sin(math.radians(angle)),
+                            x * math.sin(math.radians(angle)) + y * math.cos(math.radians(angle)))
+                points.append([x, y, z])
+            points.append(points[-segments])  # Close the circle by adding the first point again
+    insertpoint = points[19]
+    if len(points) > 9:
+        points.insert(9, insertpoint)
+
+        # Delete existing sphere curve if it exists
+    if pm.objExists("sphere_curve"):
+        pm.delete("sphere_curve")
+
+    # Create the curve with all points
+    sphere_curve = pm.curve(p=points, degree=1, name="sphere_curve")
+    pm.select(sphere_curve)
+    return sphere_curve
+
+
+def create_cone_curve(base_radius=1.0, height=1.0, segments=3):
+    # Ensure segments is at least 3 for a triangle
+    if segments < 3:
+        segments = 3
+
+    # Initialize list to hold all points for the single curve
+    points = []
+
+    # Create the base triangle points
+    base_points = []
+    for i in range(segments):
+        angle = 2 * math.pi * i / segments
+        x = base_radius * math.cos(angle)
+        y = 0
+        z = base_radius * math.sin(angle)
+        base_points.append([x, y, z])
+
+    base_points.append(base_points[0])  # Close the base triangle
+
+    # Create the apex of the cone
+    apex = [0, height, 0]
+    addx = base_points[1][0] * -1
+
+    for i in range(len(base_points)):
+        if i not in [0, 3]:
+            base_points[i][0] = base_points[i][0] + addx
+
+    # Add the base triangle points to the list
+    points.extend(base_points)
+
+    # Add the sides of the cone
+    for i in range(segments):
+        points.extend([base_points[i], apex])
+
+    # Close the loop by connecting the last point to the first point
+    points.append(base_points[0])
+
+    # Delete existing cone curve if it exists
+    if pm.objExists("cone_curve"):
+        pm.delete("cone_curve")
+
+    # Create the single curve with all points
+    cone_curve = pm.curve(p=points, degree=1, name="cone_curve")
+    pm.select(cone_curve)
+    return cone_curve
+
+
+def move_shape_in_direction(transform_node, direction_vector):
+    """
+    Moves the shape under the given transform node in the specified direction vector.
+
+    :param transform_node: The name of the transform node.
+    :param direction_vector: A list or tuple containing the direction vector [dx, dy, dz].
+    """
+    # Get the shape node under the transform node
+    shape_node = pm.listRelatives(transform_node, shapes=True)[0]
+
+    # Get all the vertices of the shape node
+    vertices = pm.ls(f"{shape_node}.cv[*]", flatten=True)
+    # print(vertices)
+    # Move each vertex by the direction vector
+    for vertex in vertices:
+        print(vertex)
+        current_position = pm.pointPosition(vertex)
+        new_position = [
+            current_position[0] + direction_vector[0],
+            current_position[1] + direction_vector[1],
+            current_position[2] + direction_vector[2]
+        ]
+        pm.xform(vertex, translation=new_position, worldSpace=True)
+
+
+def create_rectangle_curve(center=(0, 0, 0), width=1.0, height=1.0):
+    """
+    Creates a rectangle curve at the specified center with the given width and height.
+
+    :param center: A tuple (x, y, z) specifying the center of the rectangle.
+    :param width: The width of the rectangle.
+    :param height: The height of the rectangle.
+    """
+    half_width = width / 2.0
+    half_height = height / 2.0
+
+    # Define the vertices of the rectangle
+    points = [
+        (center[0] - half_width, center[1], center[2] - half_height),
+        (center[0] - half_width, center[1], center[2] + half_height),
+        (center[0] + half_width, center[1], center[2] + half_height),
+        (center[0] + half_width, center[1], center[2] - half_height),
+        (center[0] - half_width, center[1], center[2] - half_height)
+    ]
+
+    # Create the curve
+    curve = pm.curve(p=points, degree=1)
+
+    return curve
+
+
+def create_ellipse_curve(center=(0, 0, 0), radius_x=1.0, radius_y=1.0, num_points=36):
+    """
+    Creates an ellipse curve at the specified center with the given radii.
+
+    :param center: A tuple (x, y, z) specifying the center of the ellipse.
+    :param radius_x: The radius along the x-axis.
+    :param radius_y: The radius along the y-axis.
+    :param num_points: The number of points to define the ellipse (default is 36).
+    """
+    points = []
+
+    # Calculate the points on the ellipse
+    for i in range(num_points):
+        angle = (2 * math.pi * i) / num_points
+        x = center[0] + radius_x * math.cos(angle)
+        y = center[1]
+        z = center[2] + radius_y * math.sin(angle)
+        points.append((x, y, z))
+
+    points.append(points[0])
+    # Create the curve
+    curve = pm.curve(p=points, degree=3)
+
+    return curve
+
+
+def set_controller_color(controller, color_index):
+    """
+    Sets the color of the given controller.
+
+    :param controller: The name of the controller transform node.
+    :param color_index: The color index to set. (0-31 for standard colors in Maya)
+    """
+    # Get the shape nodes under the transform node
+    shapes = pm.listRelatives(controller, shapes=True)
+
+    if not shapes:
+        pm.warning(f"No shape nodes found under {controller}.")
+        return
+
+    for shape in shapes:
+        # Enable override color
+        pm.setAttr(f"{shape}.overrideEnabled", 1)
+
+        # Set the override color
+        pm.setAttr(f"{shape}.overrideColor", color_index)
+
+
+def parent_curve_shape_to_transform(curve, transform_node):
+    """
+    Parents the shape of the given curve to the specified transform node and deletes the original curve.
+
+    :param curve: The name of the curve transform node.
+    :param transform_node: The name of the target transform node.
+    """
+    # Get the shape nodes of the curve
+    curve_shapes = pm.listRelatives(curve, shapes=True, fullPath=True)
+
+    if not curve_shapes:
+        pm.warning(f"No shape nodes found in {curve}.")
+        return
+
+    for curve_shape in curve_shapes:
+        # Parent the curve shape to the transform node
+        pm.parent(curve_shape, transform_node, relative=True, shape=True)
+
+    # Delete the original curve transform node
+    pm.delete(curve)
+
+
+"""
+# Example usage
+create_ellipse_curve(center=(0, 0, 0), radius_x=3.0, radius_y=5.0)
+# Example usage
+create_rectangle_curve(center=(0, 0, 0), width=3.0, height=5.0)
+# Example usage
+move_shape_in_direction('curve1', [0,0.5,0])
+# Example usage
+create_cone_curve(base_radius=0.8, height=0.7, segments=3)
+# Example usage
+create_sphere_curve(radius=0.5, segments=8)
+# Run the function to create a pyramid with the default base width (1) and height (1)
+create_pyramid_with_curves(1,0.7,-0.3)
+# Run the function to create a cube with the default dimensions (1x1x1)
+create_cube_with_curves(0.3,1.0,0.3)
+create_cube_with_curves()
+qrrv('pCube4.test','pCube4.retest')    
+qrpct('pCube1','pCube2','pCube3','pCube3.test','pCube3.retest')    
+-2*-1
+"""
+
+
+def main():
+    # main ( rack )
+    qr_main = pm.createNode('transform', n='qr_main')
+    # root ( box - sphere )
+    qr_root = pm.createNode('transform', n='qr_root')
+    # cog ( cicle )
+    qr_cog = pm.createNode('transform', n='qr_cog')
+    # shape
+    m1 = create_rectangle_curve(center=(0, 0, 0), width=12.0, height=17.0)
+    m2 = create_rectangle_curve(center=(0, 0, 0), width=17.0, height=12.0)
+    m3 = create_rectangle_curve(center=(0, 0, 0), width=11.0, height=11.0)
+    c1 = create_ellipse_curve(center=(0, 0, 0), radius_x=3.5, radius_y=5.5)
+    c2 = create_ellipse_curve(center=(0, 0, 0), radius_x=5.5, radius_y=3.5)
+    c3 = create_ellipse_curve(center=(0, 0, 0), radius_x=3.3, radius_y=3.3)
+    r1 = create_sphere_curve()
+    r2 = create_cube_with_curves(2, 2, 2)
+    set_controller_color(m1, 6)
+    set_controller_color(m2, 6)
+    set_controller_color(m3, 6)
+    set_controller_color(c1, 20)
+    set_controller_color(c2, 20)
+    set_controller_color(c3, 20)
+    set_controller_color(r1, 22)
+    set_controller_color(r2, 22)
+    pm.rename(m1, 'qr_main_s01')
+    pm.rename(m2, 'qr_main_s02')
+    pm.rename(m3, 'qr_main_s03')
+    pm.rename(c1, 'qr_cog_s01')
+    pm.rename(c2, 'qr_cog_s02')
+    pm.rename(c3, 'qr_cog_s03')
+    pm.rename(r1, 'qr_root_s01')
+    pm.rename(r2, 'qr_root_s02')
+    parent_curve_shape_to_transform('qr_main_s01', 'qr_main')
+    parent_curve_shape_to_transform('qr_main_s02', 'qr_main')
+    parent_curve_shape_to_transform('qr_main_s03', 'qr_main')
+    pass
+
+
+main()
