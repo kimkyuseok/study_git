@@ -5,26 +5,6 @@ import math
 ch_name = 'test'
 
 
-def spineOption(s_name, i_joint, b_axis, b_mirror):
-    outGrp = pm.createNode('transform', n=ch_name + s_name)
-    # 박스 쉐입
-    parentGrp = pm.createNode('transform', n=ch_name + s_name + 'Parent')
-    # 피라미드 쉐입
-    TopGrp = pm.createNode('transform', n=ch_name + s_name + 'Top')
-    intCount = 0
-    NumGrpList = []
-    for i in range(0, intCount):
-        NumGrp = pm.createNode('transform', n=f'{ch_name}_{s_name}_{i:02}Grp')
-        pm.parent(NumGrp, parentGrp)
-        NumGrpList.append(NumGrp)
-    NumGrpWeight = [(i + 1) / (n + 1) for i in range(i_joint)]
-    NumGrpWeightRev = NumGrpWeight.reverse()
-    for i in range(i_joint):
-        pass
-        # NumGrpList 를 불러와서 웨이트 를 각각 넣어주면 끝.
-    return outGrp
-
-
 def qrpct(nodea, nodeb, nodec, weighta, weightb):
     nodea = pm.PyNode(nodea)
     nodeb = pm.PyNode(nodeb)
@@ -260,7 +240,7 @@ def move_shape_in_direction(transform_node, direction_vector):
     # print(vertices)
     # Move each vertex by the direction vector
     for vertex in vertices:
-        print(vertex)
+        # print(vertex)
         current_position = pm.pointPosition(vertex)
         new_position = [
             current_position[0] + direction_vector[0],
@@ -366,6 +346,14 @@ def parent_curve_shape_to_transform(curve, transform_node):
     pm.delete(curve)
 
 
+def set_shape_template(nodea):
+    shapes = pm.listRelatives(nodea, shapes=True)
+    for shape in shapes:
+        # Enable override color
+        pm.setAttr(f"{shape}.overrideEnabled", 1)
+        pm.setAttr(f"{shape}.overrideDisplayType", 1)
+
+
 """
 # Example usage
 create_ellipse_curve(center=(0, 0, 0), radius_x=3.0, radius_y=5.0)
@@ -420,10 +408,82 @@ def main():
     pm.rename(c3, 'qr_cog_s03')
     pm.rename(r1, 'qr_root_s01')
     pm.rename(r2, 'qr_root_s02')
-    parent_curve_shape_to_transform('qr_main_s01', 'qr_main')
-    parent_curve_shape_to_transform('qr_main_s02', 'qr_main')
-    parent_curve_shape_to_transform('qr_main_s03', 'qr_main')
-    pass
+    for i in ['qr_main_s01', 'qr_main_s02', 'qr_main_s03',
+              'qr_cog_s01', 'qr_cog_s02', 'qr_cog_s03',
+              'qr_root_s01', 'qr_root_s02']:
+        parent_curve_shape_to_transform(i, i.rsplit('_', 1)[0])
+    pm.parent(qr_cog, qr_root)
+    pm.parent(qr_root, qr_main)
+    set_shape_template(qr_cog)
+    pm.select(qr_root)
+    return qr_main
 
 
-main()
+def spineOption(s_name, i_joint, b_axis, b_mirror):
+    # 부모 데이터 필요하네
+
+    #
+    outGrp = pm.createNode('transform', n='qr_' + s_name)
+    # 박스 쉐입
+    parentGrp = pm.createNode('transform', n='qr_' + s_name + '_Parent')
+    # 피라미드 쉐입
+    TopMove = pm.createNode('transform', n='qr_' + s_name + '_TopGrp')
+    TopGrp = pm.createNode('transform', n='qr_' + s_name + '_Top')
+    parent01 = create_cube_with_curves(0.2, 0.7, 0.2)
+    parent02 = create_cube_with_curves(0.6, 0.6, 0.6)
+    move_shape_in_direction(parent01, [0, 0.5, 0])
+    top01 = create_pyramid_with_curves(1, 0.7, -0.3)
+    top02 = create_sphere_curve(radius=0.3, segments=8)
+    pm.rename(parent01, parentGrp + '_s01')
+    pm.rename(parent02, parentGrp + '_s02')
+    pm.rename(top01, TopGrp + '_s01')
+    pm.rename(top02, TopGrp + '_s02')
+    for i in [parent01, parent02, top01, top02]:
+        set_controller_color(i, 29)
+        parent_curve_shape_to_transform(i, i.rsplit('_', 1)[0])
+    pm.parent(parentGrp, outGrp)
+    pm.parent(TopMove, parentGrp)
+    pm.parent(TopGrp, TopMove)
+    intCount = 0
+    NumGrpList = []
+    for i in range(0, i_joint):
+        NumGrp = pm.createNode('transform', n=f'qr_{s_name}_{i:02}Grp')
+        pm.parent(NumGrp, parentGrp)
+        NumGrpList.append(NumGrp)
+        NumGrp.addAttr('nodea', at='float', k=1)
+        NumGrp.addAttr('nodeb', at='float', k=1)
+        NumShape = pm.createNode('transform', n=f'qr_{s_name}_{i:02}')
+        pm.parent(NumShape, NumGrp)
+        # 커브 생성
+        s01 = create_cone_curve(base_radius=0.4, height=0.4, segments=3)
+        s02 = create_sphere_curve(radius=0.25, segments=8)
+        pm.rename(s01, NumShape + '_s01')
+        pm.rename(s02, NumShape + '_s02')
+        for i in [s01, s02]:
+            set_controller_color(i, 29)
+            parent_curve_shape_to_transform(i, i.rsplit('_', 1)[0])
+    n = i_joint
+    NumGrpWeightRev = [(i + 1) / (n + 1) for i in range(i_joint)]
+    NumGrpWeight = NumGrpWeightRev[::-1]
+    print(NumGrpWeight)
+    print(NumGrpWeightRev)
+
+    # print(parentGrp,TopGrp,NumGrpList)
+    for i in range(i_joint):
+        print(i, parentGrp, TopGrp, NumGrpList[i], NumGrpWeight[i], NumGrpWeightRev[i])
+        qrpct(parentGrp, TopGrp, NumGrpList[i], NumGrpList[i] + '.nodea', NumGrpList[i] + '.nodeb')
+        pm.PyNode(NumGrpList[i] + '.nodea').set(NumGrpWeight[i])
+        pm.PyNode(NumGrpList[i] + '.nodeb').set(NumGrpWeightRev[i])
+        # NumGrpList 를 불러와서 웨이트 를 각각 넣어주면 끝.
+    TopMove.ty.set(8)
+    # connectorGrp
+    connectorGrp = pm.createNode('transform', n=f'qr_{s_name}_{i:02}_connectorGrp')
+    pm.parent(connectorGrp, parentGrp)
+    return outGrp
+
+
+spineOption('spine', 4, False, False)
+
+# main()
+# spineOption()
+# qrpct('qr_spine_Parent','qr_spine_Top','qr_spine_00Grp',0.8,0.2)
