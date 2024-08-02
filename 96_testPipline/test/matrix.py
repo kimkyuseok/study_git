@@ -419,9 +419,10 @@ def main():
     return qr_main
 
 
-def spineOption(s_name, i_joint, b_axis, b_mirror):
+def spineOption(s_name, i_joint, b_axis, b_mirror, s_parent, s_parentsub):
     # 부모 데이터 필요하네
-
+    s_parent = pm.PyNode(s_parent)
+    s_parentsub = pm.PyNode(s_parentsub)
     #
     outGrp = pm.createNode('transform', n='qr_' + s_name)
     # 박스 쉐입
@@ -477,13 +478,38 @@ def spineOption(s_name, i_joint, b_axis, b_mirror):
         # NumGrpList 를 불러와서 웨이트 를 각각 넣어주면 끝.
     TopMove.ty.set(8)
     # connectorGrp
-    connectorGrp = pm.createNode('transform', n=f'qr_{s_name}_{i:02}_connectorGrp')
+    connectorGrp = pm.createNode('transform', n=f'qr_{s_name}_connectorGrp')
     pm.parent(connectorGrp, parentGrp)
+    pm.parent(outGrp, s_parent)
+    outGrp.addAttr('nodea', at='float', k=1)
+    outGrp.addAttr('nodeb', at='float', k=1)
+    outGrp.nodea.set(1)
+    qrpct(s_parent, s_parentsub, outGrp, outGrp + '.nodea', outGrp + '.nodeb')
     return outGrp
 
 
-spineOption('spine', 4, False, False)
+main()
+spineOption('spine', 4, False, False, 'qr_root', 'qr_main')
 
-# main()
+
+def create_aimlocator(nodea, nodeb, nodec):
+    # ctrla
+    nodea = pm.PyNode(nodea)
+    # ctrlb
+    nodeb = pm.PyNode(nodeb)
+    # out parent
+    nodec = pm.PyNode(nodec)
+    # 커브 _Connector_crv
+    crv = pm.curve(p=[[0, 0, 0], [1, 1, 1]], degree=1, name=f"{nodea}_{nodeb}_Connector_crv")
+    a_loc = pm.createNode('locator', n=f"{nodea}_{nodeb}_aim_locShape")
+    # 로케이터 에임 _aim_loc
+    t_loc = pm.createNode('locator', n=f"{nodea}_{nodeb}_taget_locShape")
+    # 로케이터 타겟 -taget_loc
+
+
+create_aimlocator('qr_root', 'qr_spine_Parent', 'qr_spine_connectorGrp')
+
+# 컨트롤러 2개 주면 a_ctrl_b_ctrl_aim_crv??
+#
 # spineOption()
 # qrpct('qr_spine_Parent','qr_spine_Top','qr_spine_00Grp',0.8,0.2)
