@@ -501,13 +501,112 @@ def create_aimlocator(nodea, nodeb, nodec):
     nodec = pm.PyNode(nodec)
     # 커브 _Connector_crv
     crv = pm.curve(p=[[0, 0, 0], [1, 1, 1]], degree=1, name=f"{nodea}_{nodeb}_Connector_crv")
+    shapes = pm.listRelatives(crv, shapes=True)
     a_loc = pm.createNode('locator', n=f"{nodea}_{nodeb}_aim_locShape")
     # 로케이터 에임 _aim_loc
     t_loc = pm.createNode('locator', n=f"{nodea}_{nodeb}_taget_locShape")
     # 로케이터 타겟 -taget_loc
+    pointA = pm.PyNode(shapes[0] + '.controlPoints[0]')
+    pointB = pm.PyNode(shapes[0] + '.controlPoints[1]')
+    # create multMatrixa
+    mtma = pm.createNode('multMatrix', n=nodea + '_a_MTM')
+    mtmb = pm.createNode('multMatrix', n=nodeb + '_b_MTM')
+    # create decomposeMatrix
+    dcma = pm.createNode('decomposeMatrix', n=nodea + '_a_DCM')
+    dcmb = pm.createNode('decomposeMatrix', n=nodeb + '_b_DCM')
+    # connect
+    a_loc.getParent().worldMatrix[0] >> mtma.matrixIn[0]
+    crv.parentInverseMatrix >> mtma.matrixIn[1]
+    t_loc.getParent().worldMatrix[0] >> mtmb.matrixIn[0]
+    crv.parentInverseMatrix >> mtmb.matrixIn[1]
+    # connect decomposematrix
+    mtma.matrixSum >> dcma.inputMatrix
+    mtmb.matrixSum >> dcmb.inputMatrix
+    # connect multiply translate
+    dcma.outputTranslate >> pointA
+    dcmb.outputTranslate >> pointB
+    # parent
+    pm.parent(pm.PyNode(t_loc).getParent(), pm.PyNode(a_loc).getParent())
+    pm.parent(pm.PyNode(a_loc).getParent(), nodec)
+    pm.parent(crv, nodec)
+    # parentConstraint
+    a_loc_mtm = pm.createNode('multMatrix', n=a_loc + 'MTM')
+    a_loc_dcm = pm.createNode('decomposeMatrix', n=a_loc + '_DCM')
+    nodea.worldMatrix[0] >> a_loc_mtm.matrixIn[0]
+    a_loc.getParent().parentInverseMatrix >> a_loc_mtm.matrixIn[1]
+    a_loc_mtm.matrixSum >> a_loc_dcm.inputMatrix
+    a_loc_dcm.outputTranslate >> a_loc.getParent().t
+    # a_loc_dcm.outputRotate >> a_loc.getParent().r
+    # pointConstraint
+    t_loc_mtm = pm.createNode('multMatrix', n=t_loc + 'MTM')
+    t_loc_dcm = pm.createNode('decomposeMatrix', n=t_loc + '_DCM')
+    nodeb.worldMatrix[0] >> t_loc_mtm.matrixIn[0]
+    t_loc.getParent().parentInverseMatrix >> t_loc_mtm.matrixIn[1]
+    t_loc_mtm.matrixSum >> t_loc_dcm.inputMatrix
+    t_loc_dcm.outputTranslate >> t_loc.getParent().t
+    # decomposematrix 2
+    nodea_dcm = pm.createNode('decomposeMatrix', n=nodea + '_a_DCM')
+    nodeb_dcm = pm.createNode('decomposeMatrix', n=nodeb + '_b_DCM')
+    # plusminusaverage 1
+    a_loc_minus_pma = pm.createNode('plusMinusAverage', n=a_loc + '_minus_PMA')
+    # vectorProduct 4
+    a_locX_vpt = pm.createNode('vectorProduct', n=a_loc + '_X_VPT')
+    a_locY_vpt = pm.createNode('vectorProduct', n=a_loc + '_Y_VPT')
+    a_locZ_vpt = pm.createNode('vectorProduct', n=a_loc + '_Z_VPT')
+    a_locA_vpt = pm.createNode('vectorProduct', n=a_loc + '_A_VPT')
+    # fourByFourMatrix
+    a_loc_FBF = pm.createNode('fourByFourMatrix', n=a_loc + '_FBF')
+    # decomposematirx 1
+    a_loc_r_dcm = pm.createNode('decomposeMatrix', n=a_loc + '_R_DCM')
+    # distanceBetween 1
+    a_loc_dtb = pm.createNode('distanceBetween', n=a_loc + '_DTB')
+    a_loc_cdt = pm.createNode('condition', n=a_loc + '_CDT')
+    #
+    nodea.worldMatrix[0] >> nodea_dcm.inputMatrix
+    nodeb.worldMatrix[0] >> nodeb_dcm.inputMatrix
+    nodea_dcm.outputTranslate >> a_loc_minus_pma.input3D[0]
+    nodeb_dcm.outputTranslate >> a_loc_minus_pma.input3D[1]
+    a_loc_minus_pma.operation.set(2)
+    #
+    nodea_dcm.outputTranslate >> a_loc_dtb.point1
+    nodeb_dcm.outputTranslate >> a_loc_dtb.point2
+    a_loc_dtb.distance >> a_loc_cdt.firstTerm
+    a_loc_minus_pma.output3D >> a_loc_cdt.colorIfFalse
+    a_loc_cdt.colorIfTrueG.set(1)
+
+    for i in [a_locX_vpt, a_locY_vpt, a_locZ_vpt, a_locA_vpt]:
+        i.normalizeOutput.set(1)
+    a_loc_cdt.outColor >> a_locY_vpt.input1
+    a_locA_vpt.input1Z.set(1)
+    a_locA_vpt.operation.set(0)
+    a_locY_vpt.operation.set(0)
+    a_locY_vpt.output >> a_locX_vpt.input1
+    a_locA_vpt.output >> a_locX_vpt.input2
+    a_locX_vpt.operation.set(2)
+    a_locX_vpt.output >> a_locZ_vpt.input1
+    a_locY_vpt.output >> a_locZ_vpt.input2
+    a_locZ_vpt.operation.set(2)
+    a_locX_vpt.outputX >> a_loc_FBF.in00
+    a_locX_vpt.outputY >> a_loc_FBF.in01
+    a_locX_vpt.outputZ >> a_loc_FBF.in02
+    a_locY_vpt.outputX >> a_loc_FBF.in10
+    a_locY_vpt.outputY >> a_loc_FBF.in11
+    a_locY_vpt.outputZ >> a_loc_FBF.in12
+    a_locZ_vpt.outputX >> a_loc_FBF.in20
+    a_locZ_vpt.outputY >> a_loc_FBF.in21
+    a_locZ_vpt.outputZ >> a_loc_FBF.in22
+    a_loc_FBF.output >> a_loc_r_dcm.inputMatrix
+    a_loc_r_dcm.outputRotate >> a_loc.getParent().r
+    a_loc.getParent().v.set(0)
+    crv.template.set(1)
 
 
 create_aimlocator('qr_root', 'qr_spine_Parent', 'qr_spine_connectorGrp')
+create_aimlocator('qr_spine_Parent', 'qr_spine_00', 'qr_spine_connectorGrp')
+create_aimlocator('qr_spine_00', 'qr_spine_01', 'qr_spine_connectorGrp')
+create_aimlocator('qr_spine_01', 'qr_spine_02', 'qr_spine_connectorGrp')
+create_aimlocator('qr_spine_02', 'qr_spine_03', 'qr_spine_connectorGrp')
+create_aimlocator('qr_spine_03', 'qr_spine_Top', 'qr_spine_connectorGrp')
 
 # 컨트롤러 2개 주면 a_ctrl_b_ctrl_aim_crv??
 #
