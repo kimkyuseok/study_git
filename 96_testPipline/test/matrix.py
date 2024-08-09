@@ -447,6 +447,7 @@ def spineOption(s_name, i_joint, b_axis, b_mirror, s_parent, s_parentsub):
     pm.parent(TopGrp, TopMove)
     intCount = 0
     NumGrpList = []
+    ctrlList = [s_parent, parentGrp]
     for i in range(0, i_joint):
         NumGrp = pm.createNode('transform', n=f'qr_{s_name}_{i:02}Grp')
         pm.parent(NumGrp, parentGrp)
@@ -454,6 +455,7 @@ def spineOption(s_name, i_joint, b_axis, b_mirror, s_parent, s_parentsub):
         NumGrp.addAttr('nodea', at='float', k=1)
         NumGrp.addAttr('nodeb', at='float', k=1)
         NumShape = pm.createNode('transform', n=f'qr_{s_name}_{i:02}')
+        ctrlList.append(NumShape)
         pm.parent(NumShape, NumGrp)
         # 커브 생성
         s01 = create_cone_curve(base_radius=0.4, height=0.4, segments=3)
@@ -463,6 +465,7 @@ def spineOption(s_name, i_joint, b_axis, b_mirror, s_parent, s_parentsub):
         for i in [s01, s02]:
             set_controller_color(i, 29)
             parent_curve_shape_to_transform(i, i.rsplit('_', 1)[0])
+    ctrlList.append(TopGrp)
     n = i_joint
     NumGrpWeightRev = [(i + 1) / (n + 1) for i in range(i_joint)]
     NumGrpWeight = NumGrpWeightRev[::-1]
@@ -485,11 +488,10 @@ def spineOption(s_name, i_joint, b_axis, b_mirror, s_parent, s_parentsub):
     outGrp.addAttr('nodeb', at='float', k=1)
     outGrp.nodea.set(1)
     qrpct(s_parent, s_parentsub, outGrp, outGrp + '.nodea', outGrp + '.nodeb')
+    # locator
+    for i in range(len(ctrlList) - 1):
+        create_aimlocator(ctrlList[i], ctrlList[i + 1], connectorGrp)
     return outGrp
-
-
-main()
-spineOption('spine', 4, False, False, 'qr_root', 'qr_main')
 
 
 def create_aimlocator(nodea, nodeb, nodec):
@@ -573,7 +575,6 @@ def create_aimlocator(nodea, nodeb, nodec):
     a_loc_dtb.distance >> a_loc_cdt.firstTerm
     a_loc_minus_pma.output3D >> a_loc_cdt.colorIfFalse
     a_loc_cdt.colorIfTrueG.set(1)
-
     for i in [a_locX_vpt, a_locY_vpt, a_locZ_vpt, a_locA_vpt]:
         i.normalizeOutput.set(1)
     a_loc_cdt.outColor >> a_locY_vpt.input1
@@ -601,14 +602,6 @@ def create_aimlocator(nodea, nodeb, nodec):
     crv.template.set(1)
 
 
-create_aimlocator('qr_root', 'qr_spine_Parent', 'qr_spine_connectorGrp')
-create_aimlocator('qr_spine_Parent', 'qr_spine_00', 'qr_spine_connectorGrp')
-create_aimlocator('qr_spine_00', 'qr_spine_01', 'qr_spine_connectorGrp')
-create_aimlocator('qr_spine_01', 'qr_spine_02', 'qr_spine_connectorGrp')
-create_aimlocator('qr_spine_02', 'qr_spine_03', 'qr_spine_connectorGrp')
-create_aimlocator('qr_spine_03', 'qr_spine_Top', 'qr_spine_connectorGrp')
-
-# 컨트롤러 2개 주면 a_ctrl_b_ctrl_aim_crv??
-#
-# spineOption()
-# qrpct('qr_spine_Parent','qr_spine_Top','qr_spine_00Grp',0.8,0.2)
+main()
+spineOption('spine', 4, False, False, 'qr_root', 'qr_main')
+spineOption('neck', 5, False, False, 'qr_spine_Top', 'qr_spine_Parent')
