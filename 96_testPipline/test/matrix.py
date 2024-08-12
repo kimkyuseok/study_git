@@ -44,7 +44,7 @@ def qrpct(nodea, nodeb, nodec, weighta, weightb):
     dcmb.outputRotate >> mtdrb.input1
     mtdra.output >> pmab.input3D[0]
     mtdrb.output >> pmab.input3D[1]
-    pmab.output3D >> nodec.rotate
+    # pmab.output3D >> nodec.rotate
     # connect weight attribute
     weighta >> mtdta.input2X
     weighta >> mtdta.input2Y
@@ -419,81 +419,6 @@ def main():
     return qr_main
 
 
-def spineOption(s_name, i_joint, b_axis, b_mirror, s_parent, s_parentsub):
-    # 부모 데이터 필요하네
-    s_parent = pm.PyNode(s_parent)
-    s_parentsub = pm.PyNode(s_parentsub)
-    #
-    outGrp = pm.createNode('transform', n='qr_' + s_name)
-    # 박스 쉐입
-    parentGrp = pm.createNode('transform', n='qr_' + s_name + '_Parent')
-    # 피라미드 쉐입
-    TopMove = pm.createNode('transform', n='qr_' + s_name + '_TopGrp')
-    TopGrp = pm.createNode('transform', n='qr_' + s_name + '_Top')
-    parent01 = create_cube_with_curves(0.2, 0.7, 0.2)
-    parent02 = create_cube_with_curves(0.6, 0.6, 0.6)
-    move_shape_in_direction(parent01, [0, 0.5, 0])
-    top01 = create_pyramid_with_curves(1, 0.7, -0.3)
-    top02 = create_sphere_curve(radius=0.3, segments=8)
-    pm.rename(parent01, parentGrp + '_s01')
-    pm.rename(parent02, parentGrp + '_s02')
-    pm.rename(top01, TopGrp + '_s01')
-    pm.rename(top02, TopGrp + '_s02')
-    for i in [parent01, parent02, top01, top02]:
-        set_controller_color(i, 29)
-        parent_curve_shape_to_transform(i, i.rsplit('_', 1)[0])
-    pm.parent(parentGrp, outGrp)
-    pm.parent(TopMove, parentGrp)
-    pm.parent(TopGrp, TopMove)
-    intCount = 0
-    NumGrpList = []
-    ctrlList = [s_parent, parentGrp]
-    for i in range(0, i_joint):
-        NumGrp = pm.createNode('transform', n=f'qr_{s_name}_{i:02}Grp')
-        pm.parent(NumGrp, parentGrp)
-        NumGrpList.append(NumGrp)
-        NumGrp.addAttr('nodea', at='float', k=1)
-        NumGrp.addAttr('nodeb', at='float', k=1)
-        NumShape = pm.createNode('transform', n=f'qr_{s_name}_{i:02}')
-        ctrlList.append(NumShape)
-        pm.parent(NumShape, NumGrp)
-        # 커브 생성
-        s01 = create_cone_curve(base_radius=0.4, height=0.4, segments=3)
-        s02 = create_sphere_curve(radius=0.25, segments=8)
-        pm.rename(s01, NumShape + '_s01')
-        pm.rename(s02, NumShape + '_s02')
-        for i in [s01, s02]:
-            set_controller_color(i, 29)
-            parent_curve_shape_to_transform(i, i.rsplit('_', 1)[0])
-    ctrlList.append(TopGrp)
-    n = i_joint
-    NumGrpWeightRev = [(i + 1) / (n + 1) for i in range(i_joint)]
-    NumGrpWeight = NumGrpWeightRev[::-1]
-    print(NumGrpWeight)
-    print(NumGrpWeightRev)
-
-    # print(parentGrp,TopGrp,NumGrpList)
-    for i in range(i_joint):
-        print(i, parentGrp, TopGrp, NumGrpList[i], NumGrpWeight[i], NumGrpWeightRev[i])
-        qrpct(parentGrp, TopGrp, NumGrpList[i], NumGrpList[i] + '.nodea', NumGrpList[i] + '.nodeb')
-        pm.PyNode(NumGrpList[i] + '.nodea').set(NumGrpWeight[i])
-        pm.PyNode(NumGrpList[i] + '.nodeb').set(NumGrpWeightRev[i])
-        # NumGrpList 를 불러와서 웨이트 를 각각 넣어주면 끝.
-    TopMove.ty.set(8)
-    # connectorGrp
-    connectorGrp = pm.createNode('transform', n=f'qr_{s_name}_connectorGrp')
-    pm.parent(connectorGrp, parentGrp)
-    pm.parent(outGrp, s_parent)
-    outGrp.addAttr('nodea', at='float', k=1)
-    outGrp.addAttr('nodeb', at='float', k=1)
-    outGrp.nodea.set(1)
-    qrpct(s_parent, s_parentsub, outGrp, outGrp + '.nodea', outGrp + '.nodeb')
-    # locator
-    for i in range(len(ctrlList) - 1):
-        create_aimlocator(ctrlList[i], ctrlList[i + 1], connectorGrp)
-    return outGrp
-
-
 def create_aimlocator(nodea, nodeb, nodec):
     # ctrla
     nodea = pm.PyNode(nodea)
@@ -518,9 +443,9 @@ def create_aimlocator(nodea, nodeb, nodec):
     dcmb = pm.createNode('decomposeMatrix', n=nodeb + '_b_DCM')
     # connect
     a_loc.getParent().worldMatrix[0] >> mtma.matrixIn[0]
-    crv.parentInverseMatrix >> mtma.matrixIn[1]
+    crv.worldInverseMatrix >> mtma.matrixIn[1]
     t_loc.getParent().worldMatrix[0] >> mtmb.matrixIn[0]
-    crv.parentInverseMatrix >> mtmb.matrixIn[1]
+    crv.worldInverseMatrix >> mtmb.matrixIn[1]
     # connect decomposematrix
     mtma.matrixSum >> dcma.inputMatrix
     mtmb.matrixSum >> dcmb.inputMatrix
@@ -602,6 +527,100 @@ def create_aimlocator(nodea, nodeb, nodec):
     crv.template.set(1)
 
 
+def spineOption(s_name, i_joint, b_axis, b_mirror, s_parent, s_parentsub):
+    # 부모 데이터 필요하네
+    s_parent = pm.PyNode(s_parent)
+    s_parentsub = pm.PyNode(s_parentsub)
+    #
+    outGrp = pm.createNode('transform', n='qr_' + s_name)
+    # 박스 쉐입
+    parentGrp = pm.createNode('transform', n='qr_' + s_name + '_Parent')
+    # 피라미드 쉐입
+    TopMove = pm.createNode('transform', n='qr_' + s_name + '_TopGrp')
+    TopGrp = pm.createNode('transform', n='qr_' + s_name + '_Top')
+    parent01 = create_cube_with_curves(0.2, 0.7, 0.2)
+    parent02 = create_cube_with_curves(0.6, 0.6, 0.6)
+    move_shape_in_direction(parent01, [0, 0.5, 0])
+    top01 = create_pyramid_with_curves(1, 0.7, -0.3)
+    top02 = create_sphere_curve(radius=0.3, segments=8)
+    pm.rename(parent01, parentGrp + '_s01')
+    pm.rename(parent02, parentGrp + '_s02')
+    pm.rename(top01, TopGrp + '_s01')
+    pm.rename(top02, TopGrp + '_s02')
+    for i in [parent01, parent02, top01, top02]:
+        set_controller_color(i, 29)
+        parent_curve_shape_to_transform(i, i.rsplit('_', 1)[0])
+    pm.parent(parentGrp, outGrp)
+    pm.parent(TopMove, parentGrp)
+    pm.parent(TopGrp, TopMove)
+    intCount = 0
+    NumGrpList = []
+    ctrlList = [s_parent, parentGrp]
+    for i in range(0, i_joint):
+        NumGrp = pm.createNode('transform', n=f'qr_{s_name}_{i:02}Grp')
+        pm.parent(NumGrp, parentGrp)
+        NumGrpList.append(NumGrp)
+        NumGrp.addAttr('nodea', at='float', k=1)
+        NumGrp.addAttr('nodeb', at='float', k=1)
+        NumShape = pm.createNode('transform', n=f'qr_{s_name}_{i:02}')
+        ctrlList.append(NumShape)
+        pm.parent(NumShape, NumGrp)
+        # 커브 생성
+        s01 = create_cone_curve(base_radius=0.4, height=0.4, segments=3)
+        s02 = create_sphere_curve(radius=0.25, segments=8)
+        pm.rename(s01, NumShape + '_s01')
+        pm.rename(s02, NumShape + '_s02')
+        for i in [s01, s02]:
+            set_controller_color(i, 29)
+            parent_curve_shape_to_transform(i, i.rsplit('_', 1)[0])
+    ctrlList.append(TopGrp)
+    n = i_joint
+    NumGrpWeightRev = [(i + 1) / (n + 1) for i in range(i_joint)]
+    NumGrpWeight = NumGrpWeightRev[::-1]
+    print(NumGrpWeight)
+    print(NumGrpWeightRev)
+
+    # print(parentGrp,TopGrp,NumGrpList)
+    for i in range(i_joint):
+        print(i, parentGrp, TopGrp, NumGrpList[i], NumGrpWeight[i], NumGrpWeightRev[i])
+        qrpct(parentGrp, TopGrp, NumGrpList[i], NumGrpList[i] + '.nodea', NumGrpList[i] + '.nodeb')
+        pm.PyNode(NumGrpList[i] + '.nodea').set(NumGrpWeight[i])
+        pm.PyNode(NumGrpList[i] + '.nodeb').set(NumGrpWeightRev[i])
+        # NumGrpList 를 불러와서 웨이트 를 각각 넣어주면 끝.
+    TopMove.ty.set(8)
+    # connectorGrp
+    connectorGrp = pm.createNode('transform', n=f'qr_{s_name}_connectorGrp')
+    pm.parent(connectorGrp, parentGrp)
+    pm.parent(outGrp, s_parent)
+    outGrp.addAttr('nodea', at='float', k=1)
+    outGrp.addAttr('nodeb', at='float', k=1)
+    outGrp.nodea.set(1)
+    qrpct(s_parent, s_parentsub, outGrp, outGrp + '.nodea', outGrp + '.nodeb')
+    # locator
+    for i in range(len(ctrlList) - 1):
+        create_aimlocator(ctrlList[i], ctrlList[i + 1], connectorGrp)
+    return outGrp
+
+
 main()
 spineOption('spine', 4, False, False, 'qr_root', 'qr_main')
 spineOption('neck', 5, False, False, 'qr_spine_Top', 'qr_spine_Parent')
+
+# give me a second
+# i need to get my story straight
+# my friend are in the bathroom getting higher than the empire state
+# my lover, acose
+
+# is gemma the smithy your new game crush?
+# Are you smitten with Gemma the smithy?
+# Monster Hunter fans have fallen head over heels in love with this cute
+# new character, so much so that they brute-forced the 'Dating Sim' tag onto wild on stem for all to see.
+# loads of gemma fan art has appeared on social media after
+# the release of the new Monster Hunter Wils trailer during PlayStation State of Play
+# monster huntet wilds producer said
+# " when we designed her, of course,we knew she was gonna be an appealing character and that was the intention.
+# but it's honestly gone beyond our expectations in terms of how much love has been poured out for."
+
+
+
+
