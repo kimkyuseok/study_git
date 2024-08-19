@@ -225,6 +225,22 @@ def create_cone_curve(base_radius=1.0, height=1.0, segments=3):
     return cone_curve
 
 
+def rotate_shape_in_direction(transform_node, rotation_vector):
+    """
+    Rotates the shape under the given transform node around the specified direction vector.
+
+    :param transform_node: The name of the transform node.
+    :param rotation_vector: A list or tuple containing the rotation vector [rx, ry, rz] in degrees.
+    """
+    # Get the shape node under the transform node
+    shape_node = pm.listRelatives(transform_node, shapes=True)[0]
+
+    # Get the vertices of the shape node
+    vertices = pm.ls(f"{shape_node}.cv[*]", flatten=True)
+    pm.rotate(vertices, rotation_vector, relative=True)
+    # rotate -r -p 0cm 0.2cm 0cm -ws -fo 6.166124 5.430031 -89.412247
+
+
 def move_shape_in_direction(transform_node, direction_vector):
     """
     Moves the shape under the given transform node in the specified direction vector.
@@ -602,9 +618,215 @@ def spineOption(s_name, i_joint, b_axis, b_mirror, s_parent, s_parentsub):
     return outGrp
 
 
+def armOption(s_name, i_upperjoint, i_lowerjoint, b_oneelbow, b_mirror, b_leftright, s_parent, s_parentsub):
+    # 부모 데이터 필요하네
+    s_parent = pm.PyNode(s_parent)
+    s_parentsub = pm.PyNode(s_parentsub)
+    # 왼쪽 오른쪽 두번 만들껀지
+    s_leftright = 'l_'
+    f_leftright = 0.7
+    a_leftright = -90
+    i_leftright = 1
+    # 옵션 미러 이면 일단 왼쪽 만듬
+    if b_mirror == True:
+        s_leftright = 'l_'
+        f_leftright = 0.7
+        a_leftright = -90
+        i_leftright = 1
+    else:
+        s_leftright = 'r_'
+        f_leftright = -0.7
+        a_leftright = 90
+        i_leftright = -1
+    # 왼쪽 진행하자
+    if s_leftright == 'l_':
+        outGrp = pm.createNode('transform', n='qr_' + s_leftright + s_name)
+        # 박스 쉐입
+        parentGrp = pm.createNode('transform', n='qr_' + s_leftright + s_name + '_Parent')
+        # 피라미드 쉐입
+        TopMove = pm.createNode('transform', n='qr_' + s_leftright + s_name + '_wristGrp')
+        TopGrp = pm.createNode('transform', n='qr_' + s_leftright + s_name + '_wrist')
+        parent01 = create_cube_with_curves(f_leftright, 0.2, 0.2)
+        parent02 = create_cube_with_curves(0.6, 0.6, 0.6)
+        move_shape_in_direction(parent01, [f_leftright * 0.5, 0.0, 0])
+        top01 = create_pyramid_with_curves(1, 0.7, -0.3)
+        top02 = create_sphere_curve(radius=0.3, segments=8)
+        pm.rename(parent01, parentGrp + '_s01')
+        pm.rename(parent02, parentGrp + '_s02')
+        pm.rename(top01, TopGrp + '_s01')
+        pm.rename(top02, TopGrp + '_s02')
+        for i in [parent01, parent02, top01, top02]:
+            set_controller_color(i, 26)
+            parent_curve_shape_to_transform(i, i.rsplit('_', 1)[0])
+        pm.select(TopGrp)
+        rotate_shape_in_direction(TopGrp, [0, 0, a_leftright])
+        pm.parent(parentGrp, outGrp)
+        pm.parent(TopMove, parentGrp)
+        pm.parent(TopGrp, TopMove)
+        TopMove.tx.set(8)
+        s_ctrl = ['_clavicle', '_shoulder', '_elbow', '_wrist']
+        i_ctrl = [1, 3, 5.5]
+        for i in range(0, 3):
+            grp = pm.createNode('transform', n='qr_' + s_leftright + s_name + s_ctrl[i] + 'Grp')
+            ctl = pm.createNode('transform', n='qr_' + s_leftright + s_name + s_ctrl[i])
+            crv = create_sphere_curve(radius=0.3, segments=8)
+            set_controller_color(crv, 26)
+            # print(crv)
+            pm.rename(crv, ctl + '_s01')
+            parent_curve_shape_to_transform(crv, crv.rsplit('_', 1)[0])
+            pm.parent(ctl, grp)
+            grp.tx.set(i_ctrl[i] * i_leftright)
+        nodeA = pm.PyNode('qr_' + s_leftright + s_name + s_ctrl[1])
+        nodeB = pm.PyNode('qr_' + s_leftright + s_name + s_ctrl[3])
+        nodeC = pm.PyNode('qr_' + s_leftright + s_name + s_ctrl[2] + 'Grp')
+        nodeC.addAttr('nodea', at='float', k=1)
+        nodeC.addAttr('nodeb', at='float', k=1)
+        nodeC.nodea.set(0.5)
+        nodeC.nodeb.set(0.5)
+        qrpct(nodeA, nodeB, nodeC, nodeC + '.nodea', nodeC + '.nodeb')
+        # Aimloc
+        aim_r_grp = pm.createNode('transform', n='qr_' + s_leftright + s_name + s_ctrl[1] + '_aim_r_Grp')
+        aim_r_elbow_grp = pm.createNode('transform', n='qr_' + s_leftright + s_name + s_ctrl[1] + '_aim_r_elbow_Grp')
+        pm.parent(aim_r_elbow_grp, aim_r_grp)
+        s_str = 'qr_' + s_leftright + s_name + '_aim_r_'
+        # decomposematrix 2
+        aim_ra_dcm = pm.createNode('decomposeMatrix', n=nodeA + '_a_DCM')
+        aim_rb_dcm = pm.createNode('decomposeMatrix', n=nodeB + '_b_DCM')
+        # plusminusaverage 1
+        aim_ra_loc_minus_pma = pm.createNode('plusMinusAverage', n=s_str + '_minus_PMA')
+        # vectorProduct 4
+        aim_ra_locX_vpt = pm.createNode('vectorProduct', n=s_str + '_X_VPT')
+        aim_ra_locY_vpt = pm.createNode('vectorProduct', n=s_str + '_Y_VPT')
+        aim_ra_locZ_vpt = pm.createNode('vectorProduct', n=s_str + '_Z_VPT')
+        aim_ra_locA_vpt = pm.createNode('vectorProduct', n=s_str + '_A_VPT')
+        # fourByFourMatrix
+        aim_ra_loc_FBF = pm.createNode('fourByFourMatrix', n=s_str + '_FBF')
+        # decomposematirx 1
+        aim_ra_loc_r_dcm = pm.createNode('decomposeMatrix', n=s_str + '_R_DCM')
+        # distanceBetween 1
+        aim_ra_loc_dtb = pm.createNode('distanceBetween', n=s_str + '_DTB')
+        aim_ra_loc_cdt = pm.createNode('condition', n=s_str + '_CDT')
+        #
+        nodeB.worldMatrix[0] >> aim_ra_dcm.inputMatrix
+        nodeA.worldMatrix[0] >> aim_rb_dcm.inputMatrix
+        aim_ra_dcm.outputTranslate >> aim_ra_loc_minus_pma.input3D[0]
+        aim_rb_dcm.outputTranslate >> aim_ra_loc_minus_pma.input3D[1]
+        aim_ra_loc_minus_pma.operation.set(2)
+        #
+        aim_ra_dcm.outputTranslate >> aim_ra_loc_dtb.point1
+        aim_rb_dcm.outputTranslate >> aim_ra_loc_dtb.point2
+        aim_ra_loc_dtb.distance >> aim_ra_loc_cdt.firstTerm
+        aim_ra_loc_minus_pma.output3D >> aim_ra_loc_cdt.colorIfFalse
+        aim_ra_loc_cdt.colorIfTrueR.set(1)
+        for i in [aim_ra_locX_vpt, aim_ra_locY_vpt, aim_ra_locZ_vpt, aim_ra_locA_vpt]:
+            i.normalizeOutput.set(1)
+        aim_ra_loc_cdt.outColor >> aim_ra_locX_vpt.input1
+        aim_ra_locA_vpt.input1Z.set(1)
+        aim_ra_locA_vpt.operation.set(0)
+        aim_ra_locX_vpt.operation.set(0)
+        aim_ra_locA_vpt.output >> aim_ra_locY_vpt.input1
+        aim_ra_locX_vpt.output >> aim_ra_locY_vpt.input2
+        aim_ra_locY_vpt.operation.set(2)
+        aim_ra_locX_vpt.output >> aim_ra_locZ_vpt.input1
+        aim_ra_locY_vpt.output >> aim_ra_locZ_vpt.input2
+        aim_ra_locZ_vpt.operation.set(2)
+        aim_ra_locX_vpt.outputX >> aim_ra_loc_FBF.in00
+        aim_ra_locX_vpt.outputY >> aim_ra_loc_FBF.in01
+        aim_ra_locX_vpt.outputZ >> aim_ra_loc_FBF.in02
+        aim_ra_locY_vpt.outputX >> aim_ra_loc_FBF.in10
+        aim_ra_locY_vpt.outputY >> aim_ra_loc_FBF.in11
+        aim_ra_locY_vpt.outputZ >> aim_ra_loc_FBF.in12
+        aim_ra_locZ_vpt.outputX >> aim_ra_loc_FBF.in20
+        aim_ra_locZ_vpt.outputY >> aim_ra_loc_FBF.in21
+        aim_ra_locZ_vpt.outputZ >> aim_ra_loc_FBF.in22
+        aim_ra_loc_FBF.output >> aim_ra_loc_r_dcm.inputMatrix
+        aim_ra_loc_r_dcm.outputRotate >> pm.PyNode(aim_r_grp).r
+        pm.PyNode(aim_r_grp).v.set(0)
+        pm.parent(aim_r_grp, nodeA)
+        aim_r_grp.t.set(0, 0, 0)
+        # pole vector
+        # 디컴포즈
+        aim_elbow_dcm = pm.createNode('decomposeMatrix', n='qr_' + s_leftright + s_name + s_ctrl[2] + '_DCM')
+        # plusminusaverage 1
+        aim_elbow_minus_pma = pm.createNode('plusMinusAverage',
+                                            n='qr_' + s_leftright + s_name + s_ctrl[2] + '_minus_PMA')
+        # 벡터프로덕션 노말라이즈
+        aim_nomal_VPT = pm.createNode('vectorProduct', n='qr_' + s_leftright + s_name + s_ctrl[2] + '_nomal_VPT')
+        # 벡터프로덕션 닷
+        aim_dot_VPT = pm.createNode('vectorProduct', n='qr_' + s_leftright + s_name + s_ctrl[2] + '_dot_VPT')
+        elbow_node = pm.PyNode('qr_' + s_leftright + s_name + s_ctrl[2])
+        elbow_node.worldMatrix[0] >> aim_elbow_dcm.inputMatrix
+        #
+        aim_ra_loc_minus_pma.output3D >> aim_nomal_VPT.input1
+        aim_nomal_VPT.operation.set(0)
+        aim_nomal_VPT.normalizeOutput.set(1)
+        #
+        aim_elbow_dcm.outputTranslate >> aim_elbow_minus_pma.input3D[0]
+        aim_rb_dcm.outputTranslate >> aim_elbow_minus_pma.input3D[1]
+        aim_elbow_minus_pma.operation.set(2)
+        #
+        aim_elbow_minus_pma.output3D >> aim_dot_VPT.input1
+        aim_nomal_VPT.output >> aim_dot_VPT.input2
+        aim_dot_VPT.operation.set(1)
+        # tx
+        aim_dot_VPT.outputX >> aim_r_elbow_grp.tx
+        # 로테이션
+        # 디컴포즈
+        aim_elbow_rotate_dcm = pm.createNode('decomposeMatrix',
+                                             n='qr_' + s_leftright + s_name + s_ctrl[2] + '_rotate_DCM')
+        aim_r_elbow_grp.worldMatrix[0] >> aim_elbow_rotate_dcm.inputMatrix
+        # plusminusaverage 1
+        aim_elbow_rotate_minus_PMA = pm.createNode('plusMinusAverage',
+                                                   n='qr_' + s_leftright + s_name + s_ctrl[2] + '_rotate_minus_PMA')
+        #
+        aim_elbow_rotate_dcm.outputTranslate >> aim_elbow_rotate_minus_PMA.input3D[0]
+        aim_elbow_dcm.outputTranslate >> aim_elbow_rotate_minus_PMA.input3D[1]
+        aim_elbow_rotate_minus_PMA.operation.set(2)  # z
+        # 벡터프로덕션 크로스
+        _cross_VPT = pm.createNode('vectorProduct', n='qr_' + s_leftright + s_name + s_ctrl[2] + '_cross_VPT')
+        # fourByFourMatrix
+        _rotate_FBF = pm.createNode('fourByFourMatrix', n='qr_' + s_leftright + s_name + s_ctrl[2] + '_rotate_FBF')
+        # decomposematirx 1
+        _rotate_DCM = pm.createNode('decomposeMatrix', n='qr_' + s_leftright + s_name + s_ctrl[2] + '_rotate_DCM')
+        # distanceBetween 1
+        _d_DTB = pm.createNode('distanceBetween', n='qr_' + s_leftright + s_name + s_ctrl[2] + '_d_DTB')
+        _c_CDT = pm.createNode('condition', n='qr_' + s_leftright + s_name + s_ctrl[2] + '_c_CDT')
+        # dis
+        # condition
+        #
+        aim_elbow_rotate_dcm.outputTranslate >> _d_DTB.point1
+        aim_elbow_dcm.outputTranslate >> _d_DTB.point2
+        _d_DTB.distance >> _c_CDT.firstTerm
+        aim_elbow_rotate_minus_PMA.output3D >> _c_CDT.colorIfFalse
+        _c_CDT.colorIfTrueB.set(1)
+        #
+        # _c_CDT.operation.set(2)
+        _c_CDT.outColor >> _cross_VPT.input1
+        aim_ra_loc_minus_pma.output3D >> _cross_VPT.input2
+
+        _cross_VPT.operation.set(2)
+        _cross_VPT.normalizeOutput.set(1)
+        #
+        aim_nomal_VPT.outputX >> _rotate_FBF.in00
+        aim_nomal_VPT.outputY >> _rotate_FBF.in01
+        aim_nomal_VPT.outputZ >> _rotate_FBF.in02
+        _cross_VPT.outputX >> _rotate_FBF.in10
+        _cross_VPT.outputY >> _rotate_FBF.in11
+        _cross_VPT.outputZ >> _rotate_FBF.in12
+        aim_elbow_rotate_minus_PMA.output3Dx >> _rotate_FBF.in20
+        aim_elbow_rotate_minus_PMA.output3Dy >> _rotate_FBF.in21
+        aim_elbow_rotate_minus_PMA.output3Dz >> _rotate_FBF.in22
+        #
+        _rotate_FBF.output >> _rotate_DCM.inputMatrix
+        _rotate_DCM.outputRotate >> elbow_node.r
+
+
 main()
-spineOption('spine', 4, False, False, 'qr_root', 'qr_main')
-spineOption('neck', 5, False, False, 'qr_spine_Top', 'qr_spine_Parent')
+armOption('arm', 3, 3, True, True, True, 'qr_root', 'qr_main')
+# spineOption('spine',4,False,False,'qr_root','qr_main')
+# spineOption('neck',5,False,False,'qr_spine_Top','qr_spine_Parent')
+
+# rotate_shape_in_direction('qr_l_arm_Top', [0,0,-90])
 
 # give me a second
 # i need to get my story straight
@@ -620,6 +842,15 @@ spineOption('neck', 5, False, False, 'qr_spine_Top', 'qr_spine_Parent')
 # monster huntet wilds producer said
 # " when we designed her, of course,we knew she was gonna be an appealing character and that was the intention.
 # but it's honestly gone beyond our expectations in terms of how much love has been poured out for."
+
+
+# 제마 대장장이는 당신의 새로운 픽인가요?
+# 당신은 제마 대장장이에 반했나요?
+# 몬스터헌터 팬은 이 귀여운것에 푹 빠졌어?
+# 새로운 케릭터가,너무마음에들어서 그들이 데이트시뮬  야생 스팀에 강제로 태그 했어. 모두가 볼수 있게.
+# 젬마의 팬아트가 소셜미디어에 업로드 되고있어
+# PlayStation State of Play 동안 새로운 Monster Hunter Wils 트레일러가 공개되었습니다.
+# "몬스터 헌터 와일드의 프로듀서는 '우리가 그녀를 디자인했을 때, 물론 그녀가 매력적인 캐릭터가 될 거라는 것을 알고 있었고 그것이 의도였습니다. 하지만 솔직히 말해, 그녀에게 쏟아진 사랑의 정도는 우리의 기대를 넘어서고 있습니다.'라고 말했습니다."
 
 
 
