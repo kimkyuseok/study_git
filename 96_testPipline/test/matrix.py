@@ -676,6 +676,13 @@ def armOption(s_name, i_upperjoint, i_lowerjoint, b_oneelbow, b_mirror, b_leftri
             parent_curve_shape_to_transform(crv, crv.rsplit('_', 1)[0])
             pm.parent(ctl, grp)
             grp.tx.set(i_ctrl[i] * i_leftright)
+        #
+        ctl = create_cube_with_curves(0.2, 0.2, 0.6)
+        set_controller_color(ctl, 26)
+        move_shape_in_direction(ctl, [0, 0.0, f_leftright * -1])
+        pm.rename(ctl, 'qr_' + s_leftright + s_name + s_ctrl[2] + '_s02')
+        parent_curve_shape_to_transform(ctl, ctl.rsplit('_', 1)[0])
+        #
         nodeA = pm.PyNode('qr_' + s_leftright + s_name + s_ctrl[1])
         nodeB = pm.PyNode('qr_' + s_leftright + s_name + s_ctrl[3])
         nodeC = pm.PyNode('qr_' + s_leftright + s_name + s_ctrl[2] + 'Grp')
@@ -800,7 +807,8 @@ def armOption(s_name, i_upperjoint, i_lowerjoint, b_oneelbow, b_mirror, b_leftri
         aim_elbow_rotate_minus_PMA.output3D >> _c_CDT.colorIfFalse
         _c_CDT.colorIfTrueB.set(1)
         #
-        # _c_CDT.operation.set(2)
+        _c_CDT.secondTerm.set(0.1)
+        _c_CDT.operation.set(5)
         _c_CDT.outColor >> _cross_VPT.input1
         aim_ra_loc_minus_pma.output3D >> _cross_VPT.input2
 
@@ -819,6 +827,15 @@ def armOption(s_name, i_upperjoint, i_lowerjoint, b_oneelbow, b_mirror, b_leftri
         #
         _rotate_FBF.output >> _rotate_DCM.inputMatrix
         _rotate_DCM.outputRotate >> elbow_node.r
+        # locator
+        ctrlList = [s_parent, parentGrp]
+        for i in range(0, 4):
+            ctrlList.append('qr_' + s_leftright + s_name + s_ctrl[i])
+            # connectorGrp
+        connectorGrp = pm.createNode('transform', n=f'qr_{s_name}_connectorGrp')
+        pm.parent(connectorGrp, parentGrp)
+        for i in range(len(ctrlList) - 1):
+            create_aimlocator(ctrlList[i], ctrlList[i + 1], connectorGrp)
 
 
 main()
@@ -828,29 +845,10 @@ armOption('arm', 3, 3, True, True, True, 'qr_root', 'qr_main')
 
 # rotate_shape_in_direction('qr_l_arm_Top', [0,0,-90])
 
-# give me a second
-# i need to get my story straight
-# my friend are in the bathroom getting higher than the empire state
-# my lover, acose
-
-# is gemma the smithy your new game crush?
-# Are you smitten with Gemma the smithy?
-# Monster Hunter fans have fallen head over heels in love with this cute
-# new character, so much so that they brute-forced the 'Dating Sim' tag onto wild on stem for all to see.
-# loads of gemma fan art has appeared on social media after
-# the release of the new Monster Hunter Wils trailer during PlayStation State of Play
-# monster huntet wilds producer said
-# " when we designed her, of course,we knew she was gonna be an appealing character and that was the intention.
-# but it's honestly gone beyond our expectations in terms of how much love has been poured out for."
 
 
-# 제마 대장장이는 당신의 새로운 픽인가요?
-# 당신은 제마 대장장이에 반했나요?
-# 몬스터헌터 팬은 이 귀여운것에 푹 빠졌어?
-# 새로운 케릭터가,너무마음에들어서 그들이 데이트시뮬  야생 스팀에 강제로 태그 했어. 모두가 볼수 있게.
-# 젬마의 팬아트가 소셜미디어에 업로드 되고있어
-# PlayStation State of Play 동안 새로운 Monster Hunter Wils 트레일러가 공개되었습니다.
-# "몬스터 헌터 와일드의 프로듀서는 '우리가 그녀를 디자인했을 때, 물론 그녀가 매력적인 캐릭터가 될 거라는 것을 알고 있었고 그것이 의도였습니다. 하지만 솔직히 말해, 그녀에게 쏟아진 사랑의 정도는 우리의 기대를 넘어서고 있습니다.'라고 말했습니다."
+
+
 
 
 
