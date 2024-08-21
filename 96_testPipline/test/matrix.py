@@ -676,6 +676,7 @@ def armOption(s_name, i_upperjoint, i_lowerjoint, b_oneelbow, b_mirror, b_leftri
             parent_curve_shape_to_transform(crv, crv.rsplit('_', 1)[0])
             pm.parent(ctl, grp)
             grp.tx.set(i_ctrl[i] * i_leftright)
+            pm.parent(grp, parentGrp)
         #
         ctl = create_cube_with_curves(0.2, 0.2, 0.6)
         set_controller_color(ctl, 26)
@@ -836,11 +837,14 @@ def armOption(s_name, i_upperjoint, i_lowerjoint, b_oneelbow, b_mirror, b_leftri
         pm.parent(connectorGrp, parentGrp)
         for i in range(len(ctrlList) - 1):
             create_aimlocator(ctrlList[i], ctrlList[i + 1], connectorGrp)
+        pm.parent(outGrp, s_parent)
+        outGrp.t.set(0, 0, 0)
 
 
 main()
-armOption('arm', 3, 3, True, True, True, 'qr_root', 'qr_main')
-# spineOption('spine',4,False,False,'qr_root','qr_main')
+spineOption('spine', 4, False, False, 'qr_root', 'qr_main')
+armOption('arm', 3, 3, True, True, True, 'qr_spine_Top', 'qr_spine_Parent')
+#
 # spineOption('neck',5,False,False,'qr_spine_Top','qr_spine_Parent')
 
 # rotate_shape_in_direction('qr_l_arm_Top', [0,0,-90])
