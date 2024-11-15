@@ -10,19 +10,20 @@ import json
 import re
 import traceback
 
-
+"""
 # Maya 메인 윈도우를 QtWidgets.QWidget으로 변환
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(int(main_window_ptr), QtWidgets.QWidget)
-
+"""
 
 # 체크 리스트 클레스 변형 해서 매번 만드는 베너를 클레스 생성
 # 어떠한 이름을 가질수 있는 베너 클레스 +_+
 # 타이틀 과 회사 이름을 넣을수 있음!
 # 상속과 뷰어로 사용 되므로 시그널 같은거 불필요
-
 # 베너 클래스 정의
+
+
 class BannerClass(QtWidgets.QFrame):
     # 시그널 필요없음
     # pyqtSignal(str, object)
@@ -100,6 +101,7 @@ class banner_modelingTool(BannerClass):
     # 앱스트랙트 베너 위젯
 
 
+"""
 class _AbstractBannerWidget(QtWidgets.QWidget):
 
     def __init__(self, after_script=None):
@@ -167,3 +169,4 @@ def show_window():
 
 # 대화상자 열기
 show_window()
+"""
