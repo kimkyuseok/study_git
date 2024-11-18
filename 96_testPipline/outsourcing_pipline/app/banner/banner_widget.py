@@ -9,6 +9,7 @@ import os
 import json
 import re
 import traceback
+from banner_model import *
 
 
 class _AbstractBannerWidget(QtWidgets.QWidget):

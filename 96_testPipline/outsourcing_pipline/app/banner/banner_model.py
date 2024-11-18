@@ -37,9 +37,10 @@ class BannerClass(QtWidgets.QFrame):
         self.ui()
 
     def ui(self):
-        main_widget = QWidget()
-        self.setCentralWidget(main_widget)
-        frameAppBanner = QFrame()
+        print(f" 불러오는지 테스트 : {self.__tool_name },{self.__vendor_name}")
+        main_widget = QWidget(self)
+        #self.setCentralWidget(main_widget)
+        frameAppBanner = QFrame(self)
         frameAppBanner.setStyleSheet('''
                                                                     color: #ddd;
                                                                     background-color: #000;
@@ -48,7 +49,7 @@ class BannerClass(QtWidgets.QFrame):
         frameAppBanner.setGeometry(10, 10, 500, 100)
         frameAppBanner.setFixedHeight(100)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
-        window_layout = QVBoxLayout(self.centralWidget())
+        window_layout = QVBoxLayout(main_widget)
         window_layout.setContentsMargins(0, 0, 0, 0)
         window_layout.setSpacing(0)
         window_layout.setAlignment(Qt.AlignTop)
@@ -86,7 +87,8 @@ class BannerClass(QtWidgets.QFrame):
         search_filter_layout.setContentsMargins(0, 0, 0, 0)
         search_filter_layout.setSpacing(6)
         window_layout.addLayout(search_filter_layout)
-
+        # 최종 레이아웃 설정
+        self.setLayout(window_layout)
 
 # 빈 베너에  내용물을 채워 넣었고!
 class banner_modelingTool(BannerClass):

@@ -10,7 +10,8 @@ import json
 import re
 import traceback
 # Maya 메인 윈도우를 QtWidgets.QWidget으로 변환
-
+from banner_widget import *
+from banner_model import *
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -33,8 +34,8 @@ class widgetsUI(QtWidgets.QDialog):
         window_layout.setContentsMargins(0, 0, 0, 0)
         window_layout.setSpacing(0)
         window_layout.setAlignment(Qt.AlignTop)
-
-        window_layout.addWidget(self.banner_class)
+        banner_class = self.banner_class()
+        window_layout.addWidget(banner_class)
 
 
 # 대화상자 표시 함수
