@@ -32,14 +32,14 @@ def create_vector_attribute():
     # 커스텀 어트리뷰트 추가
     rt.custAttributes.add(attr_holder, rt.execute(custom_attribute))
 
-    print(help(helper))
+    #print(help(helper))
     helper_pos_local = rt.getPropertyController(helper,'LocalPosition')
     #rt.select(helper)
     expr_pos_ctl = rt.Point3_Expression()
-    print(helper_pos_local)
-    expr_pos_ctl.addVectorTarget('l_pos', helper_pos_local)
+    #print(helper_pos_local)
+    expr_pos_ctl.addVectorTarget('aaLocalPos', helper_pos_local)
     # then add the expression that uses that variable
-    expr_pos_ctl.setExpression('[l_pos.x, l_pos.y, l_pos.z]')
+    expr_pos_ctl.setExpression('[aaLocalPos.x/sqrt(aaLocalPos.x^2 + aaLocalPos.y^2 + aaLocalPos.z^2), aaLocalPos.y/sqrt(aaLocalPos.x^2 + aaLocalPos.y^2 + aaLocalPos.z^2), aaLocalPos.z/sqrt(aaLocalPos.x^2 + aaLocalPos.y^2 + aaLocalPos.z^2)]')
     # finally, set the controller    
     rt.setPropertyController(attr_holder, "pos", expr_pos_ctl)
 
