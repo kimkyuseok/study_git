@@ -1,3 +1,14 @@
+"""
+-- Script Name: expression controller test
+-- Description: Create a helper to generate local position normalization
+-- Version: 1.0
+-- Author: kimkyuseok
+-- Date Created: 2025-02-18
+-- Date Modified: 2025-02-19
+-- References: https://help.autodesk.com/view/MAXDEV/2024/ENU/?guid=MAXDEV_Python_using_pymxs_pymxs_custattributes_html
+-- Requirements: 3ds Max 2024 or later
+-- Usage: Run the script from the MAXScript editor. Select the objects you want to align.
+"""
 from pymxs import runtime as rt
 
 def delete_all_objects():
