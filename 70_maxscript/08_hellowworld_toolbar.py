@@ -1,7 +1,7 @@
 """
 -- Script Name: Toolbar test
 -- Description: Creating a "hello world" toolbar in Autodesk Max
--- Version: 1.0
+-- Version: 1.01
 -- Author: kimkyuseok
 -- Date Created: 2025-02-18
 -- Date Modified: 2025-02-19
@@ -15,8 +15,12 @@ from pymxs import runtime as rt
 def myfunc():
     print('hello world')
 
+def myTeapot():
+    rt.teapot()
+    
 # Connect to a gobal in the runtime:
 rt.mxs_hello = myfunc
+rt.mxs_teapot = myTeapot
 
 def remove_existing_menu(menu_name):
     main_menu = rt.menuMan.getMainMenuBar()
@@ -67,14 +71,22 @@ def add_action_to_menu(menu, action_name, category):
 # 메인 실행 부분
 try:
     my_menu = create_custom_menu("MyCustomMenu")
-    macroscript_content = 'mxs_hello()'    
+    macroscript_content_hello = 'mxs_hello()'    
+    macroscript_content_teapot = 'mxs_teapot()'    
     
-    create_or_update_menu_action("MyAction", "MyScripts", macroscript_content)
+    create_or_update_menu_action("MyAction_hello", "MyScripts_hello", macroscript_content_hello)
+    create_or_update_menu_action("MyAction_teapot", "MyScripts_teapot", macroscript_content_teapot)
     
-    if add_action_to_menu(my_menu, "MyAction", "MyScripts"):
+    if add_action_to_menu(my_menu, "MyAction_hello", "MyScripts_hello"):
         rt.menuMan.updateMenuBar()
         print("Menu creation and update completed successfully.")
     else:
         print("Failed to add action to menu. Menu update incomplete.")
+        
+    if add_action_to_menu(my_menu, "MyAction_teapot", "MyScripts_teapot"):
+        rt.menuMan.updateMenuBar()
+        print("Menu creation and update completed successfully.")
+    else:
+        print("Failed to add action to menu. Menu update incomplete.")    
 except Exception as e:
     print(f"An error occurred: {str(e)}")
