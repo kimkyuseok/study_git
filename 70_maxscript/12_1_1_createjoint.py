@@ -51,6 +51,33 @@ def create_bone_chain(point_helper_names):
     rt.redrawViews()
 
     return bones
+    
+def parent_bones_in_chain(bone_list, new_bonename_list=None):
+    if len(bone_list) < 2:
+        print("Error: At least two bones are required to create a hierarchy.")
+        return
+
+    # 새 이름 리스트가 제공되었고, 본 리스트와 길이가 다르면 오류 메시지 출력
+    if new_bonename_list and len(new_bonename_list) != len(bone_list):
+        print("Error: The length of new_bonename_list does not match the length of bone_list.")
+        return
+
+    for i in range(len(bone_list)):
+        if i < len(bone_list) - 1:
+            child_bone = bone_list[i + 1]
+            parent_bone = bone_list[i]
+            
+            # 자식 본의 부모를 설정
+            child_bone.parent = parent_bone
+
+        # 새 이름 리스트가 제공된 경우, 본의 이름 변경
+        if new_bonename_list:
+            bone_list[i].name = new_bonename_list[i]
+
+    print("Bone hierarchy created successfully.")
+    if new_bonename_list:
+        print("Bone names updated successfully.")
+    
 
 # 사용 예시:
 point_list = [
@@ -60,4 +87,13 @@ point_list = [
     "Bip001 pos L Hand 0"
 ]
 
+
 created_bones = create_bone_chain(point_list)
+
+newbonname_list = [
+    "Bip001 jnt L Forearm 0",
+    "Bip001 jnt L Forearm 1",
+    "Bip001 jnt L Forearm 2"    
+]
+# 생성된 본들을 계층 구조로 설정
+parent_bones_in_chain(created_bones,newbonname_list)
