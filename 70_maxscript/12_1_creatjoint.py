@@ -1,3 +1,14 @@
+"""
+-- Script Name: create joint bon
+-- Description: create point 1 point2 joint
+-- Version: 1.01
+-- Author: kimkyuseok
+-- Date Created: 2025-02-24
+-- Date Modified: 2025-02-24
+-- References: https://help.autodesk.com/view/MAXDEV/2024/ENU/?guid=GUID-6BD7F514-04E9-45E9-A10D-D63E837074C6
+-- Requirements: 3ds Max 2024 or later
+-- Usage: Run the script from the MAXScript editor. Select the objects you want to align.
+"""
 import pymxs
 rt = pymxs.runtime
 
