@@ -5,7 +5,7 @@
 -- Author: kimkyuseok
 -- Date Created: 2025-02-24
 -- Date Modified: 2025-02-24
--- References: https://help.autodesk.com/view/MAXDEV/2024/ENU/?guid=MAXDEV_Python_using_pymxs_pymxs_objects_html
+-- References: https://help.autodesk.com/view/MAXDEV/2024/ENU/?guid=GUID-95453E22-A022-4543-B31C-A052CECD3598
 -- Requirements: 3ds Max 2024 or later
 -- Usage: Run the script from the MAXScript editor. Select the objects you want to align.
 """
